@@ -64,7 +64,11 @@ export function BotAudioOutput() {
   // down an already-playing stream.
   useEffect(() => {
     const el = audioRef.current;
-    if (!el || !botAudioTrack) return;
+    if (!el) return;
+    if (!botAudioTrack) {
+      el.srcObject = null;
+      return;
+    }
     const existing = el.srcObject as MediaStream | null;
     if (existing) {
       const oldTrack = existing.getAudioTracks()[0];
@@ -72,6 +76,13 @@ export function BotAudioOutput() {
     }
     el.srcObject = new MediaStream([botAudioTrack]);
   }, [botAudioTrack]);
+
+  useEffect(() => {
+    const el = audioRef.current;
+    return () => {
+      if (el) el.srcObject = null;
+    };
+  }, []);
 
   useEffect(() => {
     const el = audioRef.current;

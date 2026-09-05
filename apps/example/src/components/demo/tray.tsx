@@ -23,12 +23,7 @@ export interface TrayProps {
   children: ReactNode;
 }
 
-/**
- * A bottom-bar button that slides a panel up from the bottom of the screen
- * (a shadcn Sheet). The panel's content keeps collecting while the tray is
- * closed because the stores behind it are module-level, so opening it shows
- * the session's full history.
- */
+/** Bottom sheet with an accessible title and description. */
 export function Tray({
   label,
   summary,
@@ -58,8 +53,7 @@ export function Tray({
       </SheetTrigger>
       <SheetContent
         side="bottom"
-        // z-[60]: Base UI mounts the backdrop after the popup, so at the sheet's
-        // default z-50 the dimming overlay would sit on top of the tray itself.
+        // Keep the popup above Base UI's later-mounted backdrop.
         className="border-border bg-background text-foreground z-[60] gap-0 p-0 text-[13px] leading-[1.6]"
       >
         <SheetHeader className="sr-only">

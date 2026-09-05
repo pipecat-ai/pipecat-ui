@@ -2,11 +2,7 @@
 
 import { useCallback, useSyncExternalStore } from "react";
 
-/**
- * Whether a CSS media query currently matches, kept in sync with the
- * viewport. Used to choose between layouts (not just styles) — a component
- * that only exists at one breakpoint is not mounted at the other.
- */
+/** Subscribe to viewport changes when a breakpoint changes the layout. */
 export function useMediaQuery(query: string): boolean {
   const subscribe = useCallback(
     (onChange: () => void) => {

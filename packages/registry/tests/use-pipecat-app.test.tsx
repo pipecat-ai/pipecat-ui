@@ -26,6 +26,7 @@ let connectSpy: ReturnType<typeof vi.spyOn>;
 let startBotSpy: ReturnType<typeof vi.spyOn>;
 let startBotAndConnectSpy: ReturnType<typeof vi.spyOn>;
 let initDevicesSpy: ReturnType<typeof vi.spyOn>;
+let needsInitSpy: ReturnType<typeof vi.spyOn>;
 let disconnectSpy: ReturnType<typeof vi.spyOn>;
 
 let lastTransport: StubTransport | null = null;
@@ -49,6 +50,9 @@ beforeEach(() => {
   initDevicesSpy = vi
     .spyOn(PipecatClient.prototype, "initDevices")
     .mockResolvedValue(undefined);
+  needsInitSpy = vi
+    .spyOn(PipecatClient.prototype, "needsInit")
+    .mockReturnValue(false);
   disconnectSpy = vi
     .spyOn(PipecatClient.prototype, "disconnect")
     .mockResolvedValue(undefined as never);
@@ -124,6 +128,104 @@ describe("usePipecatApp", () => {
       await Promise.resolve();
     });
     expect(disconnectSpy).toHaveBeenCalled();
+  });
+
+  it("catches device failures before the real SDK connect can leave them pending", async () => {
+    connectSpy.mockRestore();
+    needsInitSpy.mockRestore();
+    initDevicesSpy.mockRejectedValueOnce(new Error("microphone access denied"));
+    const { result } = await renderApp({
+      connectParams: { webrtcRequestParams: { endpoint: "/offer" } },
+    });
+    await act(() => result.current.connect());
+    expect(result.current.error).toBe(
+      "Failed to start session: microphone access denied",
+    );
+    expect(disconnectSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("catches device failures before starting a bot", async () => {
+    needsInitSpy.mockReturnValue(true);
+    initDevicesSpy.mockRejectedValueOnce(new Error("microphone access denied"));
+    const { result } = await renderApp({
+      startBotParams: { endpoint: "/start" },
+    });
+    await act(() => result.current.connect());
+    expect(result.current.error).toBe(
+      "Failed to start session: microphone access denied",
+    );
+    expect(startBotSpy).not.toHaveBeenCalled();
+    expect(connectSpy).not.toHaveBeenCalled();
+  });
+
+  it.each([false, true])(
+    "cancels work after a late device permission grant (endpoint: %s)",
+    async (endpoint) => {
+      let finishInit!: () => void;
+      needsInitSpy.mockReturnValue(true);
+      initDevicesSpy.mockImplementation(
+        () =>
+          new Promise<void>((resolve) => {
+            finishInit = resolve;
+          }),
+      );
+      const { result, unmount } = await renderApp({
+        connectParams: endpoint ? { endpoint: "/start" } : {},
+      });
+      let pending!: Promise<void>;
+      await act(async () => {
+        pending = result.current.connect();
+      });
+      unmount();
+      await act(async () => {
+        finishInit();
+        await pending;
+      });
+      expect(startBotSpy).not.toHaveBeenCalled();
+      expect(connectSpy).not.toHaveBeenCalled();
+      expect(disconnectSpy).toHaveBeenCalledTimes(2);
+    },
+  );
+
+  it("releases devices initialized after an unmount", async () => {
+    let finishInit!: () => void;
+    initDevicesSpy.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          finishInit = resolve;
+        }),
+    );
+    const { unmount } = await renderApp({
+      initDevicesOnMount: true,
+      connectOnMount: true,
+    });
+    unmount();
+    await act(async () => {
+      finishInit();
+    });
+    expect(connectSpy).not.toHaveBeenCalled();
+    expect(disconnectSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it("cancels automatic connection while device permission is pending", async () => {
+    let finishInit!: () => void;
+    initDevicesSpy.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          finishInit = resolve;
+        }),
+    );
+    const { result } = await renderApp({
+      initDevicesOnMount: true,
+      connectOnMount: true,
+    });
+    await act(async () => {
+      await result.current.disconnect();
+      finishInit();
+    });
+    expect(connectSpy).not.toHaveBeenCalled();
+    expect(startBotSpy).not.toHaveBeenCalled();
+    expect(disconnectSpy).toHaveBeenCalledTimes(2);
   });
 
   it("ignores repeated connect clicks while startBot is pending", async () => {

@@ -67,6 +67,23 @@ describe("BotAudioOutput", () => {
     expect(container.querySelector("audio")!.srcObject).toBeNull();
   });
 
+  it("clears the previous stream when the track disappears or output unmounts", () => {
+    hooks.usePipecatClientMediaTrack.mockReturnValue(fakeTrack("t1"));
+    const { container, rerender, unmount } = render(<BotAudioOutput />);
+    const audio = container.querySelector("audio")!;
+    expect(audio.srcObject).toBeInstanceOf(MediaStream);
+
+    hooks.usePipecatClientMediaTrack.mockReturnValue(null);
+    rerender(<BotAudioOutput />);
+    expect(audio.srcObject).toBeNull();
+
+    hooks.usePipecatClientMediaTrack.mockReturnValue(fakeTrack("t2"));
+    rerender(<BotAudioOutput />);
+    expect(audio.srcObject).toBeInstanceOf(MediaStream);
+    unmount();
+    expect(audio.srcObject).toBeNull();
+  });
+
   it("keeps the existing stream when the same track id reappears, replaces it for a new id", () => {
     hooks.usePipecatClientMediaTrack.mockReturnValue(fakeTrack("t1"));
     const { container, rerender } = render(<BotAudioOutput />);

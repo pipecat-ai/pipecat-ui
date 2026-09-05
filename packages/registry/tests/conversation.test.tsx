@@ -1,5 +1,5 @@
 import type { ConversationMessage } from "@pipecat-ai/client-react";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -75,6 +75,33 @@ describe("ConversationView", () => {
     expect(screen.getByText("assistant")).toBeInTheDocument();
     expect(screen.getByText("Hello there")).toBeInTheDocument();
     expect(screen.getByText("Hi from the bot.")).toBeInTheDocument();
+  });
+
+  it("respects scrolling away after the first messages arrive", () => {
+    const { container, rerender } = render(<ConversationView />);
+    const first = message();
+    rerender(<ConversationView messages={[first]} />);
+
+    const scroller = container.querySelector<HTMLElement>(".overflow-y-auto")!;
+    Object.defineProperties(scroller, {
+      scrollHeight: { value: 1000 },
+      clientHeight: { value: 200 },
+    });
+    scroller.scrollTo = vi.fn();
+    scroller.scrollTop = 100;
+    fireEvent.scroll(scroller);
+
+    const second = message();
+    rerender(<ConversationView messages={[first, second]} />);
+    expect(scroller.scrollTo).not.toHaveBeenCalled();
+
+    scroller.scrollTop = 800;
+    fireEvent.scroll(scroller);
+    rerender(<ConversationView messages={[first, second, message()]} />);
+    expect(scroller.scrollTo).toHaveBeenCalledWith({
+      top: 1000,
+      behavior: "smooth",
+    });
   });
 
   it("supports custom participant labels", () => {

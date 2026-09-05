@@ -102,6 +102,19 @@ export function usePipecatApp(
     const activeTransportType =
       optionsRef.current.transportType ?? "smallwebrtc";
     try {
+      // SDK connect() does not reject device-init failures; handle them here.
+      if (activeClient.needsInit()) {
+        await activeClient.initDevices();
+        if (!isCurrent()) {
+          if (
+            activeClientRef.current !== activeClient ||
+            attemptRef.current === null
+          ) {
+            await activeClient.disconnect();
+          }
+          return;
+        }
+      }
       if (startBotParams) {
         const response = await activeClient.startBot({
           requestData: {},
@@ -148,6 +161,7 @@ export function usePipecatApp(
       setError(
         `Failed to start session: ${err instanceof Error ? err.message : String(err)}`,
       );
+      await activeClient.disconnect().catch(() => {});
     } finally {
       if (attemptRef.current === attempt) connectingRef.current = null;
     }
@@ -182,18 +196,31 @@ export function usePipecatApp(
         });
         createdClient = pcClient;
         activeClientRef.current = pcClient;
+        const setupAttempt = {};
+        attemptRef.current = setupAttempt;
         setClient(pcClient);
         optionsRef.current.onClient?.(pcClient);
 
         if (optionsRef.current.initDevicesOnMount) {
           await pcClient.initDevices();
+          if (cancelled || attemptRef.current !== setupAttempt) {
+            if (cancelled || attemptRef.current === null) {
+              await pcClient.disconnect();
+            }
+            return;
+          }
         }
-        if (!cancelled && optionsRef.current.connectOnMount) {
+        if (
+          !cancelled &&
+          attemptRef.current === setupAttempt &&
+          optionsRef.current.connectOnMount
+        ) {
           await startAndConnect(pcClient);
         }
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : String(err));
+          await createdClient?.disconnect().catch(() => {});
         }
       }
     })();

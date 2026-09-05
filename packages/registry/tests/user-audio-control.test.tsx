@@ -241,6 +241,31 @@ describe("UserAudioControlView", () => {
       expect(toggle).toHaveAttribute("data-state", "inactive");
     });
   });
+
+  it.each([false, true])(
+    "mutes immediately on unmount, including a pending release (%s)",
+    (releaseBeforeUnmount) => {
+      const onMicEnabledChange = vi.fn();
+      const onPttOff = vi.fn();
+      const { unmount } = render(
+        <UserAudioControlView
+          mode="push-to-talk"
+          debounceMs={1000}
+          onMicEnabledChange={onMicEnabledChange}
+          onPttOff={onPttOff}
+        />,
+      );
+      const toggle = screen.getByRole("button", { name: "Hold to talk" });
+      fireEvent.pointerDown(toggle, { button: 0 });
+      expect(onMicEnabledChange).toHaveBeenLastCalledWith(true);
+      if (releaseBeforeUnmount) fireEvent.pointerUp(toggle);
+
+      unmount();
+
+      expect(onMicEnabledChange).toHaveBeenLastCalledWith(false);
+      expect(onPttOff).toHaveBeenCalledTimes(1);
+    },
+  );
 });
 
 describe("UserAudioControl", () => {

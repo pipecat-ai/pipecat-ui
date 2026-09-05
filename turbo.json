@@ -27,10 +27,14 @@
       ]
     },
     "@pipecat-ui/example#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "env": ["VITE_BOT_START_URL"]
     },
     "@pipecat-ui/docs#build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**", "public/r/**"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "env": ["STORYBOOK_ORIGIN"]
     }

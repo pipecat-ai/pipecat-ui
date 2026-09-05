@@ -1,34 +1,16 @@
 "use client";
 
-import type { BotOutputData, BotReadyData } from "@pipecat-ai/client-js";
+import type { BotOutputData } from "@pipecat-ai/client-js";
 import { RTVIEvent } from "@pipecat-ai/client-js";
 import {
+  useConversationContext,
   usePipecatClientTransportState,
   useRTVIClientEvent,
 } from "@pipecat-ai/client-react";
 import { cva, type VariantProps } from "class-variance-authority";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 
 import { cn } from "@/lib/utils";
-
-/** True when a "x.y.z" version string is at least the given tuple. */
-function isMinVersion(
-  version: string | undefined,
-  min: [number, number, number],
-): boolean {
-  if (!version) return false;
-  const parts = version.split(".").map((p) => Number.parseInt(p, 10));
-  const [maj = 0, minr = 0, pat = 0] = parts;
-  if (Number.isNaN(maj)) return false;
-  const cmp = [maj, minr, pat];
-  for (let i = 0; i < 3; i++) {
-    const a = cmp[i] ?? 0;
-    const b = min[i] ?? 0;
-    if (a > b) return true;
-    if (a < b) return false;
-  }
-  return true;
-}
 
 const transcriptOverlayVariants = cva(
   "mx-auto items-center justify-end text-center *:bg-foreground *:text-background *:mx-auto *:inline *:box-decoration-clone *:text-balance",
@@ -118,40 +100,46 @@ export function TranscriptOverlay({
   participant = "remote",
   ...props
 }: TranscriptOverlayProps) {
-  const [transcript, setTranscript] = useState<string[]>([]);
-  const [turnEnd, setIsTurnEnd] = useState(false);
-  const [botOutputSupported, setBotOutputSupported] = useState(false);
+  const [caption, setCaption] = useState({
+    words: [] as string[],
+    turnEnd: false,
+  });
+  const { botOutputSupported } = useConversationContext();
   const transportState = usePipecatClientTransportState();
 
-  useRTVIClientEvent(RTVIEvent.BotReady, (botData: BotReadyData) => {
-    setBotOutputSupported(isMinVersion(botData.version, [1, 1, 0]));
+  useRTVIClientEvent(RTVIEvent.TransportStateChanged, (state) => {
+    if (state !== "ready") setCaption({ words: [], turnEnd: false });
   });
 
-  // Word-level spoken chunks accumulate into the current caption.
   useRTVIClientEvent(RTVIEvent.BotOutput, (data: BotOutputData) => {
-    if (participant === "local" || !botOutputSupported) return;
+    if (
+      participant === "local" ||
+      !botOutputSupported ||
+      transportState !== "ready"
+    ) {
+      return;
+    }
     if (data.spoken === true && data.text) {
-      if (turnEnd) {
-        setTranscript([]);
-        setIsTurnEnd(false);
-      }
-      setTranscript((prev) => [...prev, data.text]);
+      setCaption((prev) => ({
+        words: [...(prev.turnEnd ? [] : prev.words), data.text],
+        turnEnd: false,
+      }));
     }
   });
 
-  useRTVIClientEvent(
-    RTVIEvent.BotStoppedSpeaking,
-    useCallback(() => {
-      if (participant === "local") return;
-      setIsTurnEnd(true);
-    }, [participant]),
-  );
+  useRTVIClientEvent(RTVIEvent.BotStoppedSpeaking, () => {
+    if (participant === "local") return;
+    setCaption((prev) => ({ ...prev, turnEnd: true }));
+  });
 
-  if (transcript.length === 0 || transportState !== "ready") {
+  if (
+    participant === "local" ||
+    !botOutputSupported ||
+    caption.words.length === 0 ||
+    transportState !== "ready"
+  ) {
     return null;
   }
 
-  return (
-    <TranscriptOverlayView words={transcript} turnEnd={turnEnd} {...props} />
-  );
+  return <TranscriptOverlayView {...caption} {...props} />;
 }

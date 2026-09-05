@@ -42,7 +42,7 @@ function isVectorType(t: string, v: number[] | number): v is Vector4 {
   return (
     !t.includes("v") &&
     Array.isArray(v) &&
-    v.length > Number.parseInt(t.charAt(0))
+    v.length >= Number.parseInt(t.charAt(0))
   );
 }
 const processUniform = <T extends UniformType>(
@@ -395,7 +395,7 @@ class Texture {
   };
 }
 
-const log = (text: string) => `react-shaders: ${text}`;
+const log = (text: string) => `WaveShader: ${text}`;
 
 const latestPointerClientCoords = (e: MouseEvent | TouchEvent) => {
   if ("changedTouches" in e) {
@@ -428,7 +428,7 @@ type TextureParams = {
   flipY?: number;
 };
 
-export interface ReactShaderToyProps {
+export interface WaveShaderProps {
   /** Fragment shader GLSL code. */
   fs: string;
 
@@ -480,7 +480,7 @@ export interface ReactShaderToyProps {
   animateWhenNotVisible?: boolean;
 }
 
-export function ReactShaderToy({
+export function WaveShader({
   fs,
   vs = BASIC_VS,
   textures = [],
@@ -496,7 +496,7 @@ export function ReactShaderToy({
   onWarning = console.warn,
   animateWhenNotVisible = false,
   ...canvasProps
-}: ReactShaderToyProps & ComponentPropsWithoutRef<"canvas">) {
+}: WaveShaderProps & ComponentPropsWithoutRef<"canvas">) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const glRef = useRef<WebGLRenderingContext | null>(null);
   const squareVerticesBufferRef = useRef<WebGLBuffer | null>(null);

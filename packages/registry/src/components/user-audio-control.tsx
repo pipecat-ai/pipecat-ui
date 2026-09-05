@@ -414,6 +414,14 @@ export function UserAudioControlView({
   useEffect(
     () => () => {
       if (releaseTimer.current) clearTimeout(releaseTimer.current);
+      if (engaged.current) {
+        engaged.current = false;
+        const current = liveRef.current;
+        // Cancel even if the SDK has not reported the preceding enable yet.
+        if (current.onMicEnabledChange) current.onMicEnabledChange(false);
+        else if (current.isMicEnabled) current.onToggleMic?.();
+        current.onPttOff?.();
+      }
     },
     [],
   );

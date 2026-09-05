@@ -1,4 +1,4 @@
-import type { BotOutputData, BotReadyData } from "@pipecat-ai/client-js";
+import type { BotOutputData } from "@pipecat-ai/client-js";
 import { RTVIEvent } from "@pipecat-ai/client-js";
 import { act, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -9,11 +9,13 @@ import {
 } from "@/components/pipecat/transcript-overlay";
 
 const hooks = vi.hoisted(() => ({
+  useConversationContext: vi.fn(),
   usePipecatClientTransportState: vi.fn(),
   useRTVIClientEvent: vi.fn(),
 }));
 
 vi.mock("@pipecat-ai/client-react", () => ({
+  useConversationContext: hooks.useConversationContext,
   usePipecatClientTransportState: hooks.usePipecatClientTransportState,
   useRTVIClientEvent: hooks.useRTVIClientEvent,
 }));
@@ -28,12 +30,12 @@ function emit(event: RTVIEvent, payload?: unknown) {
   });
 }
 
-const botReady = (version: string): BotReadyData => ({ version });
 const spoken = (text: string): BotOutputData => ({ text, spoken: true });
 
 beforeEach(() => {
   vi.clearAllMocks();
   eventHandlers.clear();
+  hooks.useConversationContext.mockReturnValue({ botOutputSupported: true });
   hooks.usePipecatClientTransportState.mockReturnValue("ready");
   hooks.useRTVIClientEvent.mockImplementation(
     (event: RTVIEvent, handler: (payload?: unknown) => void) => {
@@ -78,9 +80,8 @@ describe("TranscriptOverlay", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("accumulates spoken BotOutput chunks into a caption once the bot is ready", () => {
+  it("accumulates spoken chunks when mounted after the bot became ready", () => {
     const { container } = render(<TranscriptOverlay />);
-    emit(RTVIEvent.BotReady, botReady("1.1.0"));
     emit(RTVIEvent.BotOutput, spoken("Hello"));
     emit(RTVIEvent.BotOutput, spoken("there"));
 
@@ -91,14 +92,13 @@ describe("TranscriptOverlay", () => {
 
   it("ignores unspoken BotOutput", () => {
     const { container } = render(<TranscriptOverlay />);
-    emit(RTVIEvent.BotReady, botReady("1.1.0"));
     emit(RTVIEvent.BotOutput, { text: "internal", spoken: false });
     expect(container).toBeEmptyDOMElement();
   });
 
   it("stays hidden when the bot predates BotOutput support", () => {
+    hooks.useConversationContext.mockReturnValue({ botOutputSupported: false });
     const { container } = render(<TranscriptOverlay />);
-    emit(RTVIEvent.BotReady, botReady("1.0.9"));
     emit(RTVIEvent.BotOutput, spoken("Hello"));
     expect(container).toBeEmptyDOMElement();
   });
@@ -106,14 +106,12 @@ describe("TranscriptOverlay", () => {
   it("renders nothing while the transport is not ready", () => {
     hooks.usePipecatClientTransportState.mockReturnValue("connected");
     const { container } = render(<TranscriptOverlay />);
-    emit(RTVIEvent.BotReady, botReady("1.1.0"));
     emit(RTVIEvent.BotOutput, spoken("Hello"));
     expect(container).toBeEmptyDOMElement();
   });
 
   it("fades out when the bot stops speaking", () => {
     const { container } = render(<TranscriptOverlay />);
-    emit(RTVIEvent.BotReady, botReady("1.1.0"));
     emit(RTVIEvent.BotOutput, spoken("Done"));
     emit(RTVIEvent.BotStoppedSpeaking);
 
@@ -123,7 +121,6 @@ describe("TranscriptOverlay", () => {
 
   it("starts a fresh caption when speech resumes after a turn end", () => {
     const { container } = render(<TranscriptOverlay />);
-    emit(RTVIEvent.BotReady, botReady("1.1.0"));
     emit(RTVIEvent.BotOutput, spoken("First"));
     emit(RTVIEvent.BotStoppedSpeaking);
     emit(RTVIEvent.BotOutput, spoken("Second"));
@@ -133,16 +130,61 @@ describe("TranscriptOverlay", () => {
     expect(overlay).not.toHaveClass("animate-out");
   });
 
+  it("keeps every chunk when a new turn arrives in one batch", () => {
+    const { container } = render(<TranscriptOverlay />);
+    emit(RTVIEvent.BotOutput, spoken("First"));
+    emit(RTVIEvent.BotStoppedSpeaking);
+
+    act(() => {
+      eventHandlers.get(RTVIEvent.BotOutput)?.(spoken("Second"));
+      eventHandlers.get(RTVIEvent.BotOutput)?.(spoken("turn"));
+    });
+
+    const overlay = container.querySelector('[data-slot="transcript-overlay"]');
+    expect(overlay).toHaveTextContent(/^Second turn$/);
+    expect(overlay).not.toHaveClass("animate-out");
+  });
+
+  it("separates turns when the stop and next speech events are batched", () => {
+    const { container } = render(<TranscriptOverlay />);
+    emit(RTVIEvent.BotOutput, spoken("First"));
+
+    act(() => {
+      eventHandlers.get(RTVIEvent.BotStoppedSpeaking)?.();
+      eventHandlers.get(RTVIEvent.BotOutput)?.(spoken("Second"));
+    });
+
+    const overlay = container.querySelector('[data-slot="transcript-overlay"]');
+    expect(overlay).toHaveTextContent(/^Second$/);
+    expect(overlay).not.toHaveClass("animate-out");
+  });
+
+  it("does not revive the previous session's caption on reconnect", () => {
+    const { container, rerender } = render(<TranscriptOverlay />);
+    emit(RTVIEvent.BotOutput, spoken("Previous session"));
+
+    hooks.usePipecatClientTransportState.mockReturnValue("disconnected");
+    emit(RTVIEvent.TransportStateChanged, "disconnected");
+    rerender(<TranscriptOverlay />);
+    expect(container).toBeEmptyDOMElement();
+
+    hooks.usePipecatClientTransportState.mockReturnValue("ready");
+    emit(RTVIEvent.TransportStateChanged, "ready");
+    rerender(<TranscriptOverlay />);
+    expect(container).toBeEmptyDOMElement();
+
+    emit(RTVIEvent.BotOutput, spoken("New session"));
+    expect(container).toHaveTextContent(/^New session$/);
+  });
+
   it("renders nothing for the local participant", () => {
     const { container } = render(<TranscriptOverlay participant="local" />);
-    emit(RTVIEvent.BotReady, botReady("1.1.0"));
     emit(RTVIEvent.BotOutput, spoken("Hello"));
     expect(container).toBeEmptyDOMElement();
   });
 
   it("forwards view props like size to the overlay", () => {
     render(<TranscriptOverlay size="lg" className="custom-overlay" />);
-    emit(RTVIEvent.BotReady, botReady("1.1.0"));
     emit(RTVIEvent.BotOutput, spoken("Hello"));
     const overlay = screen
       .getByText("Hello")

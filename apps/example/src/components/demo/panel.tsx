@@ -13,18 +13,11 @@ export interface PanelProps {
   children?: ReactNode;
 }
 
-// Legends sit *on* the rule and paint the page background over it, so the
-// border reads as broken around them — a fieldset legend, without the
-// fieldset's layout. z-10 keeps them above panel contents, which are
-// declared after them.
+// Mask the border behind each legend.
 const LEGEND =
   "absolute z-10 bg-background px-1.5 text-[13px] leading-none font-medium";
 
-/**
- * A bordered region of the UI, labelled on its own border. Panels carry no
- * padding: their contents own it, so a divider inside one can run the full
- * height of the interior.
- */
+/** Bordered region; children own the padding. */
 export function Panel({
   title,
   status,

@@ -1,6 +1,6 @@
 import { act, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ReactShaderToy } from "@/components/pipecat/wave-shader";
+import { WaveShader } from "@/components/pipecat/wave-shader";
 
 const fragment = "void mainImage(out vec4 c, in vec2 p) { c = vec4(iTime); }";
 let frames: Map<number, FrameRequestCallback>;
@@ -76,9 +76,7 @@ describe("shader lifecycle", () => {
   it("does not attach deleted shaders or draw after compilation fails", () => {
     const gl = context({ compile: false });
     const error = vi.fn();
-    render(
-      <ReactShaderToy fs={fragment} onWarning={() => {}} onError={error} />,
-    );
+    render(<WaveShader fs={fragment} onWarning={() => {}} onError={error} />);
     frame();
     frame();
     expect(error).toHaveBeenCalledWith(
@@ -92,7 +90,7 @@ describe("shader lifecycle", () => {
   it("discards a failed program instead of starting a render loop", () => {
     const gl = context({ link: false });
     const error = vi.fn();
-    render(<ReactShaderToy fs={fragment} onError={error} />);
+    render(<WaveShader fs={fragment} onError={error} />);
     frame();
     expect(error).toHaveBeenCalledWith(expect.stringContaining("link failed"));
     expect(gl.deleteProgram).toHaveBeenCalled();
@@ -100,9 +98,32 @@ describe("shader lifecycle", () => {
     expect(frames.size).toBe(0);
   });
 
+  it.each([
+    ["2f", [0.25, 0.5], "uniform2f"],
+    ["3f", [0.25, 0.5, 0.75], "uniform3f"],
+    ["4f", [0.25, 0.5, 0.75, 1], "uniform4f"],
+    ["2i", [1, 2], "uniform2i"],
+    ["3i", [1, 2, 3], "uniform3i"],
+    ["4i", [1, 2, 3, 4], "uniform4i"],
+  ] as const)(
+    "uploads a %s uniform with its exact vector length",
+    (type, values, method) => {
+      const gl = context();
+      render(
+        <WaveShader
+          fs="void mainImage(out vec4 c, in vec2 p) { c = vec4(float(tint.x)); }"
+          uniforms={{ tint: { type, value: [...values] } }}
+        />,
+      );
+      frame();
+      frame();
+      expect(gl[method]).toHaveBeenCalledWith(expect.anything(), ...values);
+    },
+  );
+
   it("reuses uniform locations between frames", () => {
     const gl = context();
-    render(<ReactShaderToy fs={fragment} animateWhenNotVisible />);
+    render(<WaveShader fs={fragment} animateWhenNotVisible />);
     frame();
     const lookups = gl.getUniformLocation!.mock.calls.length;
     expect(lookups).toBeGreaterThan(0);
@@ -114,7 +135,7 @@ describe("shader lifecycle", () => {
 
   it("resumes a paused offscreen loop when background animation is enabled", () => {
     const gl = context();
-    const { rerender } = render(<ReactShaderToy fs={fragment} />);
+    const { rerender } = render(<WaveShader fs={fragment} />);
     frame();
     act(() =>
       visible(
@@ -124,7 +145,7 @@ describe("shader lifecycle", () => {
     );
     frame();
     expect(frames.size).toBe(0);
-    rerender(<ReactShaderToy fs={fragment} animateWhenNotVisible />);
+    rerender(<WaveShader fs={fragment} animateWhenNotVisible />);
     frame();
     expect(gl.drawArrays).toHaveBeenCalledTimes(2);
     expect(frames.size).toBe(1);

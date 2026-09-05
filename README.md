@@ -1,7 +1,7 @@
 # Pipecat UI
 
 [![Docs](https://img.shields.io/badge/docs-ui.pipecat.ai-blue)](https://ui.pipecat.ai)
-[![Storybook](https://img.shields.io/badge/storybook-browse-ff4785?logo=storybook&logoColor=white)](https://ui.pipecat.ai)
+[![Storybook](https://img.shields.io/badge/storybook-browse-ff4785?logo=storybook&logoColor=white)](https://ui.pipecat.ai/storybook/)
 [![Status](https://img.shields.io/badge/status-v1_beta-orange)](https://github.com/pipecat-ai/pipecat-ui)
 
 > [!IMPORTANT]
@@ -9,10 +9,6 @@
 > [Voice UI Kit repository](https://github.com/pipecat-ai/voice-ui-kit), which
 > will soon be deprecated. Components now install as source through the shadcn
 > CLI, replacing the previous npm package distribution (≤0.13.x).
-
-<!-- TODO: point the Storybook badge at the hosted Storybook once it's live -->
-
-<img width="100%" src="image.png" alt="Pipecat UI components" />
 
 The UI layer for voice agents. Pipecat UI is a
 [shadcn registry](https://ui.shadcn.com/docs/registry) of components for
@@ -147,8 +143,8 @@ registry `cssVars` (and are yours to restyle):
 
 - **[Component docs](https://ui.pipecat.ai)** — live previews,
   configurable examples, and installation for every item
-- **Storybook** — every component and state in isolation _(hosted link coming
-  soon; run locally with `pnpm dev`)_
+- **[Storybook](https://ui.pipecat.ai/storybook/)** — every component and state
+  in isolation; run locally with `pnpm dev`
 - **[Pipecat client SDK](https://docs.pipecat.ai/client/react/introduction)** —
   the provider, hooks, and transports the kit builds on
 - **[Pipecat](https://docs.pipecat.ai)** — build the agent on the other side of
@@ -156,8 +152,7 @@ registry `cssVars` (and are yours to restyle):
 
 ## Contributing
 
-The monorepo is the registry plus two host apps that consume it like a real
-project:
+The monorepo contains the registry and three apps:
 
 - `packages/registry` — the product: `registry.json` + source under
   `src/components/`, shared modules in `src/lib/`, hooks in
@@ -166,11 +161,12 @@ project:
   registry at `/r/{name}.json`
 - `apps/storybook` — Storybook 10 dev host set up as a real Base UI shadcn
   consumer; also hosts the vitest run
+- `apps/example` — client-only reference app with installed component copies
 
 ```bash
 pnpm install
-pnpm dev        # storybook on :6006 + docs on :3600
-pnpm build      # registry build + storybook build + docs build
+pnpm dev        # storybook :6006, docs :3600, example :3700
+pnpm build      # registry, docs, storybook and example
 pnpm registry:check # manifest, dependencies, source and coverage checks
 pnpm typecheck && pnpm lint && pnpm test
 ```

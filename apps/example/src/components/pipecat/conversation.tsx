@@ -48,7 +48,6 @@ export function ConversationView({
 }: ConversationViewProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const isScrolledToEdge = useRef(true);
-  const rafRef = useRef<number | undefined>(undefined);
 
   const maybeScrollToEdge = useCallback(() => {
     if (!scrollRef.current) return;
@@ -74,33 +73,9 @@ export function ConversationView({
 
   useEffect(() => {
     if (noAutoscroll) return;
+    if (messages.length === 0) isScrolledToEdge.current = true;
     maybeScrollToEdge();
   }, [messages, maybeScrollToEdge, noAutoscroll]);
-
-  // Track whether the user is at the follow edge, throttled to one check
-  // per animation frame.
-  useEffect(() => {
-    const scrollElement = scrollRef.current;
-    if (!scrollElement) return;
-
-    const handleScroll = () => {
-      if (rafRef.current !== undefined) return;
-      rafRef.current = requestAnimationFrame(() => {
-        rafRef.current = undefined;
-        updateScrollState();
-      });
-    };
-    scrollElement.addEventListener("scroll", handleScroll, { passive: true });
-    updateScrollState();
-
-    return () => {
-      scrollElement.removeEventListener("scroll", handleScroll);
-      if (rafRef.current !== undefined) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = undefined;
-      }
-    };
-  }, [updateScrollState]);
 
   if (messages.length === 0) {
     return (
@@ -124,7 +99,11 @@ export function ConversationView({
       data-slot="conversation"
       className={cn("relative flex h-full flex-col", className)}
     >
-      <div ref={scrollRef} className="relative flex-1 overflow-y-auto p-4">
+      <div
+        ref={scrollRef}
+        onScroll={updateScrollState}
+        className="relative flex-1 overflow-y-auto p-4"
+      >
         <div className="flex flex-col gap-4">
           {(reverseOrder ? [...messages].reverse() : messages).map(
             (message, index) => (

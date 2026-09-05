@@ -15,7 +15,7 @@ import {
   type RefObject,
 } from "react";
 
-import { ReactShaderToy } from "@/components/pipecat/wave-shader";
+import { WaveShader } from "@/components/pipecat/wave-shader";
 import {
   createVisualizerAnalyser,
   resolveVisualizerColor,
@@ -442,7 +442,7 @@ void mainImage(out vec4 O, in vec2 I) {
 }`;
 
 /**
- * The mutable uniform store behind one shader instance. ReactShaderToy
+ * The mutable uniform store behind one shader instance. WaveShader
  * reads each .value fresh every frame, so animation writes land here
  * directly — React never re-renders on the hot path.
  */
@@ -969,7 +969,7 @@ export const AudioVisualizerWaveView = memo(function AudioVisualizerWaveView({
       style={{ width: size, height: size }}
       className={className}
     >
-      <ReactShaderToy
+      <WaveShader
         key={ribbonCount}
         fs={shaderSource}
         devicePixelRatio={Math.min(
