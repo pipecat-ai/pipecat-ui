@@ -1,0 +1,30 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      pipecat:
+        patterns: ["@pipecat-ai/*"]
+      docs:
+        patterns: ["next", "fumadocs-*", "@fumadocs/*"]
+      tooling:
+        patterns:
+          [
+            "typescript*",
+            "eslint*",
+            "@eslint/*",
+            "prettier*",
+            "vitest",
+            "@testing-library/*",
+          ]
+    commit-message:
+      prefix: "chore(deps)"
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(ci)"

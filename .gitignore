@@ -1,0 +1,27 @@
+# deps
+node_modules/
+
+# build output
+dist/
+storybook-static/
+.turbo/
+
+# env
+.env
+.env.*
+!.env.example
+
+# local planning notes
+plans/
+
+# misc
+*.log
+.DS_Store
+coverage/
+
+# local package-manager cache
+.pnpm-store/
+
+# The docs build generates and serves the registry
+packages/registry/public/
+.vercel/

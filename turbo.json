@@ -1,0 +1,43 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [
+        "dist/**",
+        "public/r/**",
+        "storybook-static/**",
+        ".next/**",
+        "!.next/cache/**"
+      ]
+    },
+    "dev": {
+      "cache": false,
+      "persistent": true
+    },
+    "lint": {},
+    "typecheck": {
+      "inputs": ["$TURBO_DEFAULT$", "../../packages/registry/src/**"]
+    },
+    "test": {
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "../../packages/registry/src/**",
+        "../../packages/registry/tests/**"
+      ]
+    },
+    "@pipecat-ui/example#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["dist/**"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "env": ["VITE_BOT_START_URL"]
+    },
+    "@pipecat-ui/docs#build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**", "public/r/**"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "env": ["STORYBOOK_ORIGIN"]
+    }
+  },
+  "globalDependencies": ["tsconfig.base.json"]
+}

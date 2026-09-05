@@ -1,0 +1,42 @@
+name: Registry installation
+
+on:
+  schedule:
+    - cron: "41 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  catalog:
+    runs-on: ubuntu-latest
+    outputs:
+      items: ${{ steps.catalog.outputs.items }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: catalog
+        run: node -e 'const r=require("./packages/registry/registry.json"); require("node:fs").appendFileSync(process.env.GITHUB_OUTPUT, "items="+JSON.stringify([...r.items.map(i=>i.name), "all"])+"\n")'
+  install:
+    needs: catalog
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        item: ${{ fromJSON(needs.catalog.outputs.items) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Build registry
+        run: pnpm registry:build
+      - name: Install in a fresh consumer, typecheck and bundle
+        env:
+          REGISTRY_ITEM: ${{ matrix.item }}
+        run: node packages/registry/scripts/install-test.mjs "$REGISTRY_ITEM"

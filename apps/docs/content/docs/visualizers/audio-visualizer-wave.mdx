@@ -1,0 +1,74 @@
+---
+title: Audio Visualizer Wave
+description: Shader aura audio visualizer — swirling ribbons of light that react to the session and voice.
+---
+
+<a
+  href="/storybook/?path=/story/components-audiovisualizerwave--idle"
+  target="_blank"
+  rel="noreferrer"
+>
+  Open in Storybook
+</a>
+
+<AudioVisualizerWavePreview />
+
+## Installation
+
+<InstallTabs name="audio-visualizer-wave" />
+
+## Usage
+
+```tsx
+import {
+  AudioVisualizerWave,
+  AudioVisualizerWaveView,
+} from "@/components/pipecat/audio-visualizer-wave";
+
+// Connected: visualize a Pipecat participant's audio
+<AudioVisualizerWave participantType="bot" size={160} />
+
+// View: visualize any MediaStreamTrack
+<AudioVisualizerWaveView track={myTrack} color="--active-background" colorShift={0.3} />
+```
+
+The orb defaults to a vivid cyan — it's made of light, so bright colors work best; pass
+any CSS color, `currentColor`, or a `--css-var` name to retint it. `hueSpread` pairs the
+base color with one accent hue a fixed step around the wheel, and speech widens the pair
+for more color while the bot talks. It renders on the
+kit's Shadertoy-compatible WebGL runtime (`components/pipecat/wave-shader.tsx`, installed
+with this item), so the fragment shader pastes straight into Shadertoy for iteration.
+
+## Key props
+
+| Prop                           | Type                       | Description                                                                                                                  |
+| ------------------------------ | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `participantType`              | `"local" \| "bot"`         | Whose audio to visualize (connected)                                                                                         |
+| `track`                        | `MediaStreamTrack \| null` | Audio source (View); calm resting drift when null                                                                            |
+| `size`                         | `number`                   | Visualizer size in px (square, default 224)                                                                                  |
+| `color`                        | `string`                   | Any CSS color, `currentColor`, or a `--css-var` name (default `#1FD5F9`)                                                     |
+| `colorShift`                   | `number`                   | How many times the palette crosses between its two tones through the orb's depth (default 0.05)                              |
+| `hueSpread`                    | `number`                   | Hue distance from `color` to its accent tone, as a fraction of the wheel (default 0.18; 0 is single-color)                   |
+| `accentColor`                  | `string`                   | Pin the second tone to an explicit color instead of deriving it from `hueSpread`                                             |
+| `speed` / `amplitude` / `glow` | `number`                   | Multipliers over each state's base pace, edge deformation, and brightness (default 1)                                        |
+| `softness`                     | `number`                   | Edge blur/softness of the aura (default 0.2)                                                                                 |
+| `fill`                         | `number`                   | 0 draws open contour wisps, 1 fills the body into an orb (default 0.4)                                                       |
+| `core` / `hollow`              | `number`                   | Brightness at the centre of the hollow (default 0.1) and the fraction of the radius left open (default 0.3)                  |
+| `depth`                        | `number`                   | How far the innermost layer recedes — the shell's thickness (default 0.22)                                                   |
+| `smoothing`                    | `number`                   | Width of each layer's falloff; the anti-aliasing that hides banding (default 0.28)                                           |
+| `density`                      | `number`                   | Ink gain before tone mapping; higher is denser and hotter (default 0.55)                                                     |
+| `highlight`                    | `number`                   | Specular highlight strength (default 0.2); the `noHighlight` boolean removes the shine                                       |
+| `highlightColor`               | `string`                   | Shine tint (default: white warmed a little toward the aura color)                                                            |
+| `iterations`                   | `number`                   | Light ribbons layered into the aura (default 24; more is denser at a linear GPU cost, and changing it recompiles the shader) |
+| `volume`                       | `number`                   | Override the speech level computed from the track (0–1)                                                                      |
+| `themeMode`                    | `"dark" \| "light"`        | Background optimization; auto-detected from the root `dark` class                                                            |
+| `isConnecting`                 | `boolean`                  | Override: the orb springs up with a gentle shimmer (wins over `isThinking`)                                                  |
+| `isThinking`                   | `boolean`                  | Override: the orb pulses deeply while the bot works                                                                          |
+
+Silent and speaking need no props — the visualizer derives them from the track, and
+speaking rides the voice: the churn quickens, the palette widens, and the body swells
+with speech, easing back to the calm baseline through pauses. The overrides opt into the other two lifecycle
+states, and every state change animates instead of snapping. `VisualizerState` — the
+vocabulary shared by all kit visualizers (`"connecting" | "silent" | "speaking" |
+"thinking"`, from `components/pipecat/visualizer.ts`, installed with this item) — is
+exposed on the root element as `data-state`.

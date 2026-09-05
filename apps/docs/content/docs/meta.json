@@ -1,0 +1,13 @@
+{
+  "title": "Docs",
+  "pages": [
+    "index",
+    "installation",
+    "theming",
+    "updating",
+    "components",
+    "blocks",
+    "hooks",
+    "visualizers"
+  ]
+}

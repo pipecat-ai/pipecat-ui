@@ -1,0 +1,59 @@
+name: Component bug
+description: Report a problem in an installed Pipecat UI component.
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Expected and actual behavior
+      description: Include steps to reproduce and a minimal reproduction link if possible.
+    validations:
+      required: true
+  - type: textarea
+    id: version
+    attributes:
+      label: Installed component and source version
+      description: Name the affected component and its installation date, source commit or repository release, if known.
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: edited
+    attributes:
+      label: Have you edited the installed source?
+      options:
+        - "No"
+        - "Yes"
+        - "Unsure"
+    validations:
+      required: true
+  - type: textarea
+    id: diff
+    attributes:
+      label: Local changes
+      description: Paste the diff or link to your edits. Enter "Unmodified" if you have not edited the file; explain if unsure.
+      render: diff
+    validations:
+      required: true
+  - type: textarea
+    id: components
+    attributes:
+      label: components.json
+      description: Include style, aliases and registries. Remove any private registry credentials or tokens.
+      render: json
+    validations:
+      required: true
+  - type: input
+    id: cli
+    attributes:
+      label: shadcn CLI version
+      description: Output of npx shadcn@latest --version, and the installation-time version if known.
+    validations:
+      required: true
+  - type: textarea
+    id: versions
+    attributes:
+      label: Environment versions
+      description: List React, Tailwind, @pipecat-ai/client-js, @pipecat-ai/client-react, transport package, framework, browser and OS. Use N/A for packages you do not use.
+      render: text
+    validations:
+      required: true

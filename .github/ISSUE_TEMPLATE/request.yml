@@ -1,0 +1,24 @@
+name: Upstream component change
+description: Propose a change that should benefit all Pipecat UI consumers.
+body:
+  - type: markdown
+    attributes:
+      value: |
+        You own the source installed in your app and can edit it directly.
+        Start with [theming](https://ui.pipecat.ai/docs/theming) and
+        [editing and updating](https://ui.pipecat.ai/docs/updating).
+        App-specific styling and behavior often belong in your copy.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem should this solve for everyone?
+      description: Describe the use case and why it should change upstream.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change and alternatives
+      description: Explain the component or API change, alternatives you tried, and whether editing your copy solves the problem.
+    validations:
+      required: true

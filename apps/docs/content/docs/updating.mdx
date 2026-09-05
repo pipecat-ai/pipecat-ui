@@ -1,0 +1,31 @@
+---
+title: Editing and updating
+description: Review upstream changes while preserving your local edits.
+---
+
+Pipecat UI installs source into your repository. Edit it to fit your app;
+[theming](/docs/theming) covers common styling changes. Your installed files do
+not update automatically.
+
+## Updating a component
+
+1. Save your local changes in Git.
+2. Read the [repository releases](https://github.com/pipecat-ai/pipecat-ui/releases)
+   for changes and migration notes.
+3. Run `npx shadcn@latest add @pipecat/<item> --diff` to inspect upstream changes.
+4. Re-add the item, review the Git diff, and merge your customizations. Shared
+   helpers, dependencies and CSS can change too.
+5. Test and build your application before deploying it.
+
+The registry at `ui.pipecat.ai/r` serves the current main deployment. Versions
+belong to repository releases; components are not versioned independently.
+
+## Reporting issues
+
+Include the item name, when you installed it (or the source commit/release, if
+known), any local edits, `components.json`, and your SDK and shadcn CLI versions.
+For installation failures, include the exact command and full output in the
+[issue form](https://github.com/pipecat-ai/pipecat-ui/issues/new/choose).
+
+An upstream change request should explain why it helps other applications as
+well as your own. Styling and one-off behavior can usually be changed locally.
