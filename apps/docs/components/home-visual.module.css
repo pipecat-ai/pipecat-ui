@@ -1,0 +1,17 @@
+@media (prefers-reduced-motion: no-preference) {
+  .wave {
+    transform-box: view-box;
+    transform-origin: 50% 50%;
+    animation: waveform 6s ease-in-out infinite;
+  }
+}
+
+@keyframes waveform {
+  0%,
+  100% {
+    transform: scaleY(0.82);
+  }
+  50% {
+    transform: scaleY(1.12);
+  }
+}

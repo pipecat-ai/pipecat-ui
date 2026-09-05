@@ -1,0 +1,63 @@
+---
+title: Theming
+description: How the components pick up your theme, and the semantic tokens they add.
+icon: Palette
+---
+
+Components style themselves with your existing shadcn theme — `primary`, `muted`,
+`destructive`, radii, and so on — so they match your app out of the box in light and dark
+mode.
+
+## Kit tokens
+
+Two small semantic groups are added to your global CSS by the registry (via `cssVars`) the
+first time a component that needs them is installed.
+
+Swatches show the defaults for the current light or dark mode.
+
+<div className="my-6 overflow-hidden rounded-xl border border-fd-border [&>div]:my-0 [&_table]:my-0 [&_td]:px-3 sm:[&_td]:px-4 [&_td]:py-3 [&_td]:align-middle [&_th]:bg-fd-muted/50 [&_th]:px-3 sm:[&_th]:px-4 [&_th]:py-3 [&_tbody_tr:last-child]:border-b-0">
+
+| Token                                                                                                                                                 | Default                                                                                                                                                                                                                         |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--active-background` <span className="mt-1.5 block text-xs leading-relaxed text-fd-muted-foreground">Connection actions and status indicators</span> | <span className="inline-flex items-center gap-2 whitespace-nowrap"><span aria-hidden="true" className="size-4 shrink-0 rounded-xs bg-active ring-1 ring-black/15 ring-inset dark:ring-white/20" /> Green</span>                 |
+| `--active-foreground` <span className="mt-1.5 block text-xs leading-relaxed text-fd-muted-foreground">Text and icons on active surfaces</span>        | <span className="inline-flex items-center gap-2 whitespace-nowrap"><span aria-hidden="true" className="size-4 shrink-0 rounded-xs bg-active-foreground ring-1 ring-black/15 ring-inset dark:ring-white/20" /> Pale green</span> |
+| `--inactive-background` <span className="mt-1.5 block text-xs leading-relaxed text-fd-muted-foreground">Muted mic, camera and screen controls</span>  | <span className="inline-flex items-center gap-2 whitespace-nowrap"><span aria-hidden="true" className="size-4 shrink-0 rounded-xs bg-inactive ring-1 ring-black/15 ring-inset dark:ring-white/20" /> Red</span>                 |
+| `--inactive-foreground` <span className="mt-1.5 block text-xs leading-relaxed text-fd-muted-foreground">Text and icons on inactive surfaces</span>    | <span className="inline-flex items-center gap-2 whitespace-nowrap"><span aria-hidden="true" className="size-4 shrink-0 rounded-xs bg-inactive-foreground ring-1 ring-black/15 ring-inset dark:ring-white/20" /> Pale red</span> |
+| `--agent-background` <span className="mt-1.5 block text-xs leading-relaxed text-fd-muted-foreground">Tinted surfaces for the assistant</span>         | <span className="inline-flex items-center gap-2 whitespace-nowrap"><span aria-hidden="true" className="size-4 shrink-0 rounded-xs bg-agent ring-1 ring-black/15 ring-inset dark:ring-white/20" /> Violet tint</span>            |
+| `--agent-foreground` <span className="mt-1.5 block text-xs leading-relaxed text-fd-muted-foreground">Assistant role labels, text and icons</span>     | <span className="inline-flex items-center gap-2 whitespace-nowrap"><span aria-hidden="true" className="size-4 shrink-0 rounded-xs bg-agent-foreground ring-1 ring-black/15 ring-inset dark:ring-white/20" /> Violet</span>      |
+| `--client-background` <span className="mt-1.5 block text-xs leading-relaxed text-fd-muted-foreground">Tinted surfaces for the user</span>             | <span className="inline-flex items-center gap-2 whitespace-nowrap"><span aria-hidden="true" className="size-4 shrink-0 rounded-xs bg-client ring-1 ring-black/15 ring-inset dark:ring-white/20" /> Blue tint</span>             |
+| `--client-foreground` <span className="mt-1.5 block text-xs leading-relaxed text-fd-muted-foreground">User role labels, text and icons</span>         | <span className="inline-flex items-center gap-2 whitespace-nowrap"><span aria-hidden="true" className="size-4 shrink-0 rounded-xs bg-client-foreground ring-1 ring-black/15 ring-inset dark:ring-white/20" /> Blue</span>       |
+
+</div>
+
+Each pair follows the shadcn surface convention — the `-background` token fills the
+element, the `-foreground` token colors content on top of it. They're plain CSS variables
+in `:root` / `.dark` — restyle them like any other shadcn token. For example, keep
+the media colors and use your theme's primary and muted colors for conversation roles:
+
+```css title="globals.css"
+:root {
+  --active-background: oklch(0.696 0.17 162.48);
+  --active-foreground: oklch(0.979 0.021 166.113);
+  --inactive-background: oklch(0.702 0.189 22.23);
+  --inactive-foreground: oklch(0.971 0.013 17.38);
+  --agent-background: color-mix(
+    in oklch,
+    var(--primary) 10%,
+    var(--background)
+  );
+  --agent-foreground: var(--primary);
+  --client-background: var(--muted);
+  --client-foreground: var(--muted-foreground);
+}
+```
+
+Tailwind utilities map onto the pairs the same way `bg-primary` maps onto `--primary`:
+`bg-active` and `text-active` read `--active-background`, while `text-active-foreground`
+reads `--active-foreground` (and likewise for `inactive`). Components use them as
+`bg-active text-active-foreground` or `data-[state=inactive]:bg-inactive`, so overrides in
+your CSS apply everywhere immediately.
+
+Conversation role labels use `text-agent-foreground` and `text-client-foreground`.
+Their tinted backgrounds are available for custom surfaces: use
+`bg-agent text-agent-foreground` or `bg-client text-client-foreground`.

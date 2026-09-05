@@ -1,0 +1,55 @@
+name: Release
+
+on:
+  repository_dispatch:
+    types: [vercel.deployment.success, vercel.deployment.promoted]
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  group: repository-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: >-
+      github.event.client_payload.environment == 'production' &&
+      github.event.client_payload.git.ref == 'main' &&
+      github.event.client_payload.project.name == (vars.VERCEL_DOCS_PROJECT || 'pipecat-ui')
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+      DEPLOY_SHA: ${{ github.event.client_payload.git.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.client_payload.git.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - name: Require passing CI for the deployed commit
+        shell: bash
+        run: |
+          RUN_ID=$(gh run list --workflow ci.yml --commit "$DEPLOY_SHA" --event push --json databaseId --jq '.[0].databaseId // empty')
+          if [[ -z "$RUN_ID" ]]; then
+            echo "No main CI run found for the deployed commit"
+            exit 1
+          fi
+          gh run watch "$RUN_ID" --exit-status
+      - name: Release a new repository version
+        shell: bash
+        run: |
+          VERSION=$(node -p 'require("./package.json").version')
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Expected a stable semantic version in root package.json"
+            exit 1
+          fi
+          TAG="v$VERSION"
+          RELEASE=$(gh release list --limit 1000 --json tagName --jq ".[] | select(.tagName == \"$TAG\") | .tagName")
+          if [[ -z "$RELEASE" ]]; then
+            gh release create "$TAG" --target "$DEPLOY_SHA" --title "$TAG" --generate-notes
+          fi

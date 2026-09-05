@@ -1,0 +1,19 @@
+.home {
+  background: radial-gradient(
+    ellipse at 80% 35%,
+    color-mix(in oklch, var(--color-sky-400) 9%, transparent),
+    transparent 60%
+  );
+}
+
+.backdrop {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(var(--border) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: radial-gradient(ellipse at 85% 35%, #0003, transparent 65%);
+}
