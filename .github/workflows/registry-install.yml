@@ -14,7 +14,7 @@ jobs:
     outputs:
       items: ${{ steps.catalog.outputs.items }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - id: catalog
         run: node -e 'const r=require("./packages/registry/registry.json"); require("node:fs").appendFileSync(process.env.GITHUB_OUTPUT, "items="+JSON.stringify([...r.items.map(i=>i.name), "all"])+"\n")'
   install:
@@ -27,7 +27,7 @@ jobs:
       matrix:
         item: ${{ fromJSON(needs.catalog.outputs.items) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:

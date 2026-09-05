@@ -24,7 +24,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       DEPLOY_SHA: ${{ github.event.client_payload.git.sha }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: ${{ github.event.client_payload.git.sha }}
           fetch-depth: 0
