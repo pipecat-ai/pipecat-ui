@@ -110,20 +110,7 @@ export interface UserVideoControlViewProps {
   children?: React.ReactNode;
 }
 
-/**
- * Camera control view: a toggle with an optional preview tile and a
- * camera picker in a split-button dropdown. Fully props-driven — pair
- * with the connected UserVideoControl for Pipecat wiring, or drive it
- * from your own state.
- *
- * States, in precedence order: isLoading → unavailableText → interactive.
- * A min-width on the toggle keeps the footprint stable across them.
- * The toggle exposes aria-pressed, and falls back to an aria-label when
- * no visible label is rendered. Icon sizes (size="icon", "icon-sm", …)
- * render the toggle icon-only. With the tile (default), the controls
- * overlay its bottom-left corner and the video slot shows while the
- * camera is on.
- */
+/** Camera toggle and device picker with an optional preview. Loading takes precedence over unavailability. */
 export function UserVideoControlView({
   isCamEnabled = false,
   onToggleCam,
@@ -307,18 +294,7 @@ export interface UserVideoControlProps extends Omit<
   videoProps?: Partial<React.ComponentProps<typeof PipecatClientVideo>>;
 }
 
-/**
- * Camera control wired to the Pipecat client. Automatically manages:
- *
- * - camera state via PipecatClientCamToggle
- * - the camera list and selection via the client's media devices
- * - the preview tile's video element (PipecatClientVideo)
- * - loading (device initialization) and per-device error states via
- *   useMediaState, so the control stays accurate across
- *   connect/disconnect cycles
- *
- * Must be rendered inside a PipecatClientProvider.
- */
+/** Requires PipecatClientProvider; manages camera state, devices, and preview. */
 export function UserVideoControl({
   unavailableText,
   videoProps,

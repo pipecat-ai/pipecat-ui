@@ -33,12 +33,7 @@ export interface MetricsPerformanceViewProps {
   className?: string;
 }
 
-/**
- * Performance metrics: per-processor latency tiles and time-series charts
- * for ttfb, ttfa, and processing time, all displayed in milliseconds.
- * Chrome-free — wrap it in your own card or panel. ttfa requires pipecat
- * server ≥ 1.7.
- */
+/** Latency tiles and charts in milliseconds. ttfa requires Pipecat server ≥1.7. */
 export function MetricsPerformanceView({
   series,
   categories = ["ttfb"],

@@ -1,63 +1,28 @@
-# example
+# Pipecat UI reference client
 
-A bare Vite + React consumer app for testing the registry end-to-end — the
-same `shadcn add` flow a real consumer uses, but pointed at the local
-registry host instead of production.
+A browser-only Vite app showing how to compose installed Pipecat UI components.
+The dark theme and dithered aura come from phonellm; the mobile transcript and
+metrics drawers follow turkcat's responsive layout.
 
-`components.json` maps the `@pipecat` namespace to
-`http://localhost:3600/r/{name}.json`, which is the docs app serving the
-built registry JSON from its `public/r/` dir.
-
-## Adding components
-
-1. Make sure the docs app is running (it hosts the registry):
-
-   ```sh
-   pnpm dev            # from the repo root — starts docs (3600) + storybook (6006)
-   ```
-
-2. If you've edited registry source since the last build, rebuild the JSON:
-
-   ```sh
-   node apps/docs/scripts/sync-registry.mjs   # from the repo root
-   ```
-
-3. Add components from this directory:
-
-   ```sh
-   pnpm exec shadcn add @pipecat/connect-button
-   ```
-
-   Multiple at once works too:
-
-   ```sh
-   pnpm exec shadcn add @pipecat/connect-button @pipecat/audio-visualizer-bar
-   ```
-
-Files land in `src/components/pipecat/`, shadcn primitives in
-`src/components/ui/`, and npm deps / theme tokens install automatically.
-The command is identical to what production consumers run — only the
-registry URL in `components.json` differs.
-
-## Available items
-
-- `audio-visualizer-bar`
-- `audio-visualizer-radial`
-- `bot-audio`
-- `client-status`
-- `connect-button`
-- `conversation`
-- `device-select`
-- `dtmf-keypad`
-- `session-info`
-- `text-input`
-- `transcript-overlay`
-- `user-audio-control`
-- `user-screen-control`
-- `user-video-control`
-
-## Running the app
+From the repository root:
 
 ```sh
-pnpm dev            # from this directory — Vite on http://localhost:3700
+pnpm install
+pnpm --filter @pipecat-ui/example dev
 ```
+
+Open `http://localhost:3700`. Start your own SmallWebRTC bot, then set its start
+endpoint in **Connection** (default `http://localhost:7860/start`). You can also
+set `VITE_BOT_START_URL` in `.env.local`. The bot must allow this origin through
+CORS. No server or private credentials belong in this app.
+
+`App.tsx` supplies a lazy factory for the one transport installed here. The
+remaining transports are not dependencies. The hook returns initialization and
+connection failures for the UI to display.
+
+`components/pipecat`, `hooks/use-pipecat-*` and `lib` contain registry source
+copies, as they would in a consumer app. `components/demo` contains app-specific
+composition and the dithered visualizer variant. These customizations demonstrate
+editing your copy without adding demo-only props to the registry.
+
+This app is built in CI for verification and is not deployed.

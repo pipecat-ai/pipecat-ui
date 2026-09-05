@@ -1,6 +1,7 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "allowImportingTsExtensions": true,
     "paths": {
       "@/components/pipecat/console/*": [
         "../../packages/registry/src/blocks/console/*"

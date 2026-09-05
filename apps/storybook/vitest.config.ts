@@ -1,6 +1,6 @@
 import { defineConfig } from "vitest/config";
 
-import { registryAliases } from "./vite.alias";
+import { registryAliases } from "./vite.alias.ts";
 
 // Tests live in packages/registry/tests (one file per item, dev-only —
 // never part of a registry item); this app hosts the run because it owns

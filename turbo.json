@@ -16,13 +16,24 @@
       "persistent": true
     },
     "lint": {},
-    "typecheck": {},
+    "typecheck": {
+      "inputs": ["$TURBO_DEFAULT$", "../../packages/registry/src/**"]
+    },
     "test": {
       "inputs": [
         "$TURBO_DEFAULT$",
         "../../packages/registry/src/**",
         "../../packages/registry/tests/**"
       ]
+    },
+    "@pipecat-ui/example#build": {
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "env": ["VITE_BOT_START_URL"]
+    },
+    "@pipecat-ui/docs#build": {
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "env": ["STORYBOOK_ORIGIN"]
     }
-  }
+  },
+  "globalDependencies": ["tsconfig.base.json"]
 }

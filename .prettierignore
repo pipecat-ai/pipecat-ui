@@ -1,6 +1,12 @@
 node_modules/
 dist/
 storybook-static/
-public/r/
+**/public/r/
 pnpm-lock.yaml
 .turbo/
+
+# generated Next.js and Fumadocs files
+**/.next/
+**/.source/
+**/next-env.d.ts
+.pnpm-store/

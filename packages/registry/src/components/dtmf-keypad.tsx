@@ -301,12 +301,7 @@ export interface DTMFKeypadProps extends Omit<DTMFKeypadViewProps, "onSend"> {
   onError?: (error: unknown) => void;
 }
 
-/**
- * Telephone keypad wired to the Pipecat client. Buffered mode sends the
- * sequence in one sendTone call on submit; immediate mode sends each
- * press. Disabled until the transport is ready.
- * Must be rendered inside a PipecatClientProvider.
- */
+/** Requires PipecatClientProvider. Buffered mode sends on submit; immediate mode sends each press. */
 export function DTMFKeypad({
   mode = "buffered",
   disabled,

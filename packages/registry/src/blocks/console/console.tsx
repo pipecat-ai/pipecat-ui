@@ -71,10 +71,8 @@ import {
 import type { TransportOptions, TransportType } from "@/lib/transports";
 import { cn } from "@/lib/utils";
 
-// ---------------------------------------------------------------------------
 // Connection-URL helpers: resolve the URL the connect button will hit, for
 // its hover tooltip.
-// ---------------------------------------------------------------------------
 
 function extractUrlFromOptions(options: unknown): string | undefined {
   if (typeof options !== "object" || options === null) return undefined;

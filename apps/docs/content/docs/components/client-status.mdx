@@ -3,6 +3,14 @@ title: Client Status
 description: Client and agent connection status rows, live-updated from transport and bot events.
 ---
 
+<a
+  href="/storybook/?path=/story/components-clientstatus--all-states"
+  target="_blank"
+  rel="noreferrer"
+>
+  Open in Storybook
+</a>
+
 <ClientStatusPreview />
 
 ## Installation
@@ -23,8 +31,8 @@ Shows two rows: the client's transport state and the agent's lifecycle state (de
 
 ## Key props
 
-| Prop | Type | Description |
-| --- | --- | --- |
-| `noClientState` / `noAgentState` | `boolean` | Hide a row |
+| Prop                             | Type      | Description |
+| -------------------------------- | --------- | ----------- |
+| `noClientState` / `noAgentState` | `boolean` | Hide a row  |
 
 `ClientStatusValue` is exported standalone for rendering a single status value anywhere.

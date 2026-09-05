@@ -1,8 +1,8 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
 import { appName, gitConfig } from "./shared";
 
-/** Voice UI Kit mark, as used on the original docs site. */
-function VoiceUIKitLogo() {
+/** Pipecat UI mark, as used on the original docs site. */
+function PipecatUILogo() {
   return (
     <svg
       width="22"
@@ -29,11 +29,12 @@ export function baseOptions(): BaseLayoutProps {
     nav: {
       title: (
         <>
-          <VoiceUIKitLogo />
+          <PipecatUILogo />
           <span className="font-semibold">{appName}</span>
         </>
       ),
     },
+    links: [{ text: "Storybook", url: "/storybook/", external: true }],
     githubUrl: `https://github.com/${gitConfig.user}/${gitConfig.repo}`,
   };
 }

@@ -82,20 +82,7 @@ export interface UserScreenControlViewProps {
   children?: React.ReactNode;
 }
 
-/**
- * Screen-share control view: a toggle that grows a preview tile while
- * sharing (the controls overlay its bottom-left corner). Fully
- * props-driven — pair with the connected UserScreenControl for Pipecat
- * wiring, or drive it from your own state.
- *
- * States, in precedence order: isLoading → unavailableText → interactive.
- * A min-width on the toggle keeps the footprint stable across them.
- * The toggle exposes aria-pressed, and falls back to an aria-label when
- * no visible label is rendered. Icon sizes (size="icon", "icon-sm", …)
- * render the toggle icon-only. Unlike the camera control, the tile only
- * renders while sharing is active — and the state styling is inverted:
- * resting is neutral, sharing is the red stop affordance.
- */
+/** Screen-share toggle with a preview while sharing. Loading takes precedence over unavailability. */
 export function UserScreenControlView({
   isScreenEnabled = false,
   onToggleScreen,
@@ -212,18 +199,7 @@ export interface UserScreenControlProps extends Omit<
   videoProps?: Partial<React.ComponentProps<typeof PipecatClientVideo>>;
 }
 
-/**
- * Screen-share control wired to the Pipecat client. Automatically
- * manages:
- *
- * - share state via PipecatClientScreenShareToggle
- * - the preview tile's video element (PipecatClientVideo, screenVideo
- *   track)
- * - gating: disabled until the transport is connected, since sharing
- *   can only start on a live session
- *
- * Must be rendered inside a PipecatClientProvider.
- */
+/** Requires PipecatClientProvider; sharing is disabled until the transport is connected. */
 export function UserScreenControl({
   videoProps,
   ...props

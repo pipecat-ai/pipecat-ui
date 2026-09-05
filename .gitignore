@@ -4,7 +4,6 @@ node_modules/
 # build output
 dist/
 storybook-static/
-packages/registry/public/r/
 .turbo/
 
 # env
@@ -19,3 +18,10 @@ plans/
 *.log
 .DS_Store
 coverage/
+
+# local package-manager cache
+.pnpm-store/
+
+# The docs build generates and serves the registry
+packages/registry/public/
+.vercel/

@@ -1,0 +1,34 @@
+name: Installation failure
+description: Report a shadcn CLI, registry or dependency installation failure.
+body:
+  - type: textarea
+    id: command
+    attributes:
+      label: Exact installation command
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Full CLI output
+      description: Include the complete error and stack trace. Remove credentials or tokens.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: components
+    attributes:
+      label: components.json
+      description: Include style, aliases and registries, with private credentials removed.
+      render: json
+    validations:
+      required: true
+  - type: textarea
+    id: versions
+    attributes:
+      label: Toolchain and project
+      description: List Node, package manager, shadcn CLI, React, Tailwind, framework and OS versions. State whether this is a new or existing project.
+      render: text
+    validations:
+      required: true

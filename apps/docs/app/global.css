@@ -14,7 +14,7 @@ html > body[data-scroll-locked] {
 }
 
 /*
- * shadcn (base-nova) theme + voice-ui-kit semantic tokens, so component
+ * shadcn (base-nova) theme + pipecat-ui semantic tokens, so component
  * previews render exactly as they do in consumer apps. Mirrors
  * apps/storybook/src/styles/globals.css (fonts inherited from fumadocs).
  */
@@ -22,7 +22,7 @@ html > body[data-scroll-locked] {
 
 @custom-variant dark (&:is(.dark *));
 
-/* voice-ui-kit: push-to-talk live outline pulse */
+/* pipecat-ui: push-to-talk live outline pulse */
 @keyframes ptt-pulse {
   50% {
     outline-color: color-mix(

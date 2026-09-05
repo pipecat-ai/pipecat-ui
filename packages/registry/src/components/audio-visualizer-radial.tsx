@@ -44,12 +44,7 @@ export interface AudioVisualizerRadialViewProps {
   radius?: number;
   /** Dot / bar end style. */
   barLineCap?: "round" | "square";
-  /**
-   * How quickly bars chase the live spectrum while speaking: the fraction
-   * of the remaining distance covered per frame (0–1, default 0.5). Lower
-   * is smoother, 1 disables smoothing. State transitions keep their own
-   * fixed ease.
-   */
+  /** Spectrum smoothing per frame (0–1, default 0.5); 1 disables smoothing. */
   barSpeed?: number;
   /** Opacity of unlit dots (default 0.1). Lit dots render at 1. */
   restingOpacity?: number;
@@ -59,12 +54,7 @@ export interface AudioVisualizerRadialViewProps {
    * lap every two seconds.
    */
   rotationSpeed?: number;
-  /**
-   * Override: a session is being established — two opposed lit dots glide
-   * around the ring. Wins over isThinking; the track is ignored while
-   * set. Without overrides the visualizer derives silent/speaking from
-   * the track on its own.
-   */
+  /** Connecting takes precedence over thinking and ignores the audio track. */
   isConnecting?: boolean;
   /**
    * Override: the bot is working on a response — a comet (bright head,
@@ -80,24 +70,7 @@ export interface AudioVisualizerRadialViewProps {
   className?: string;
 }
 
-/**
- * Canvas-2D radial audio visualizer for any MediaStreamTrack: a ring of
- * dots that light up and grow outward with the live spectrum. Bands are
- * mel-scaled over the voice range (see visualizer.ts) and mirrored across
- * the ring's vertical axis, so the spectrum has no seam where it wraps.
- * Bars chase the audio at a configurable barSpeed.
- *
- * Silent rests as a dim ring; speaking lights every dot; connecting
- * glides two opposed lit dots around the ring; thinking orbits a comet
- * while the ring breathes. Lit dots take accentColor, applied as an
- * overlay that fades with the same ease as opacity, so trails keep the
- * accent hue. Silent and speaking derive from the track; the
- * isConnecting / isThinking overrides opt into the kit's other shared
- * lifecycle states; every state change eases briefly instead of
- * snapping. The resolved VisualizerState is exposed as data-state, and
- * the canvas sizes itself so grown bars, caps, and the breath always
- * render inside it.
- */
+/** Mirrored mel bands avoid a seam around the ring. Connecting and thinking override track-derived state. */
 export const AudioVisualizerRadialView = memo(
   function AudioVisualizerRadialView({
     track = null,
@@ -163,7 +136,6 @@ export const AudioVisualizerRadialView = memo(
       };
     }, [track, isConnecting, isThinking]);
 
-    // Canvas setup + animation loop
     useEffect(() => {
       if (!canvasRef.current) return;
 
@@ -396,12 +368,7 @@ export interface AudioVisualizerRadialProps extends Omit<
   participantType: ParticipantType;
 }
 
-/**
- * Radial audio visualizer wired to a Pipecat media track. Pass
- * isConnecting / isThinking to reflect session state; silent and speaking
- * follow the participant's audio automatically. Must be rendered inside a
- * PipecatClientProvider.
- */
+/** Requires PipecatClientProvider; silence and speech follow the participant track. */
 export function AudioVisualizerRadial({
   participantType,
   ...props

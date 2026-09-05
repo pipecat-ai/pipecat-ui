@@ -7,3 +7,9 @@ allowBuilds:
 minimumReleaseAgeExclude:
   - "@types/node@26.1.2"
   - shadcn@4.16.0
+  - "@fumadocs/base-ui@16.15.7"
+  - "@pipecat-ai/client-js@1.13.1"
+  - "@pipecat-ai/small-webrtc-transport@1.10.7"
+  - eslint@10.10.0
+  - fumadocs-core@16.15.7
+  - lint-staged@17.5.0

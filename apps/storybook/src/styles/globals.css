@@ -7,7 +7,7 @@
 
 @source "../../../../packages/registry/src";
 
-/* voice-ui-kit: push-to-talk live outline pulse */
+/* pipecat-ui: push-to-talk live outline pulse */
 @keyframes ptt-pulse {
   50% {
     outline-color: color-mix(
@@ -144,7 +144,7 @@
 }
 
 /*
- * voice-ui-kit semantic tokens.
+ * pipecat-ui semantic tokens.
  * Mirrors the cssVars payloads of the registry items — consumers receive
  * these automatically when running `shadcn add @pipecat/...`.
  */

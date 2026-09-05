@@ -95,12 +95,7 @@ export function usePipecatDevices(kind: DeviceKind): {
   }
 }
 
-/**
- * Loading and error state for one device kind, derived from the client's
- * per-device MediaState. Speaker enumeration rides on microphone
- * permission, so audiooutput follows the mic state.
- * Must be used inside a PipecatClientProvider.
- */
+/** Speaker enumeration depends on microphone permission, so audiooutput follows mic MediaState. */
 export function usePipecatDeviceState(kind: DeviceKind): {
   isLoading: boolean;
   unavailableText?: string;
@@ -185,15 +180,7 @@ export interface DeviceSelectViewProps extends Omit<
   unavailableText?: React.ReactNode;
 }
 
-/**
- * Device picker rendered as a select. Fully props-driven — pair with the
- * connected DeviceSelect for Pipecat wiring, or drive it from your own
- * state.
- *
- * States, in precedence order: isLoading → unavailableText → interactive.
- * The trigger carries a kind-based aria-label default (overridable via
- * props) and data-state="loading" / "unavailable" styling hooks.
- */
+/** Loading takes precedence over unavailability. The trigger is named from kind unless overridden. */
 export function DeviceSelectView({
   devices,
   selectedDevice,
@@ -359,19 +346,7 @@ export interface DeviceDropdownViewProps {
   unavailableText?: React.ReactNode;
 }
 
-/**
- * Device picker rendered as a dropdown menu, composed shadcn-style:
- *
- * ```tsx
- * <DeviceDropdownView kind="videoinput" devices={cams} …>
- *   <DeviceDropdownTrigger render={<Button>Camera</Button>} />
- *   <DeviceDropdownContent />
- * </DeviceDropdownView>
- * ```
- *
- * Fully props-driven — pair with the connected DeviceDropdown for
- * Pipecat wiring. Give icon-only triggers an aria-label.
- */
+/** Compose with DeviceDropdownTrigger and DeviceDropdownContent. Name icon-only triggers with aria-label. */
 export function DeviceDropdownView({
   children,
   devices,

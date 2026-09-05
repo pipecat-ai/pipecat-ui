@@ -18,6 +18,9 @@ interface RegistryFile {
 
 interface RegistryItem {
   name: string;
+  meta?: {
+    deprecated?: { reason: string; replacement?: string };
+  };
   dependencies?: string[];
   registryDependencies?: string[];
   cssVars?: {
@@ -74,7 +77,6 @@ const KIT_DOC_ROUTES: Record<string, string> = {
   "use-pipecat-metrics": "/docs/hooks/use-pipecat-metrics",
   "use-pipecat-event-stream": "/docs/hooks/use-pipecat-event-stream",
   metrics: "/docs/blocks/metrics",
-  console: "/docs/blocks/console",
 };
 
 const PACKAGE_MANAGERS = ["pnpm", "npm", "yarn", "bun"] as const;
@@ -153,91 +155,108 @@ export function InstallTabs({ name }: { name: string }) {
   );
 
   return (
-    <Tabs items={["Command", "Manual"]}>
-      <Tab value="Command">
-        <CommandTabs command={`npx shadcn@latest add @pipecat/${item.name}`} />
-        {kitDeps.length > 0 && (
-          <p className="text-fd-muted-foreground mt-3 text-sm">
-            Also installs{" "}
-            {kitDeps.map((dep, i) => (
-              <span key={dep}>
-                {i > 0 && ", "}
-                <code>{dep}</code>
-              </span>
-            ))}{" "}
-            as registry {kitDeps.length === 1 ? "dependency" : "dependencies"}.
-          </p>
-        )}
-      </Tab>
-      <Tab value="Manual">
-        <div className="flex flex-col gap-4">
-          {npmDeps.length > 0 && (
+    <>
+      {item.meta?.deprecated && (
+        <p role="note" className="rounded-md border p-4">
+          Deprecated: {item.meta.deprecated.reason}
+          {item.meta.deprecated.replacement && (
             <>
-              <p className="text-sm">Install the npm dependencies:</p>
-              <CommandTabs command={`npm install ${npmDeps.join(" ")}`} />
+              {" "}
+              Use <code>{item.meta.deprecated.replacement}</code>.
             </>
           )}
-          {shadcnDeps.length > 0 && (
-            <>
-              <p className="text-sm">
-                Add the shadcn/ui primitives it composes:
-              </p>
-              <CommandTabs
-                command={`npx shadcn@latest add ${shadcnDeps.join(" ")}`}
-              />
-            </>
-          )}
+        </p>
+      )}
+      <Tabs items={["Command", "Manual"]}>
+        <Tab value="Command">
+          <CommandTabs
+            command={`npx shadcn@latest add @pipecat/${item.name}`}
+          />
           {kitDeps.length > 0 && (
-            <p className="text-sm">
-              Manually install{" "}
-              {kitDeps.map((dep, i) => {
-                const depName = dep.replace("@pipecat/", "");
-                return (
-                  <span key={dep}>
-                    {i > 0 && ", "}
-                    <Link
-                      className="underline underline-offset-4"
-                      href={
-                        KIT_DOC_ROUTES[depName] ?? `/docs/components/${depName}`
-                      }
-                    >
-                      {dep}
-                    </Link>
-                  </span>
-                );
-              })}{" "}
-              first, following {kitDeps.length === 1 ? "its" : "their"} manual
-              steps.
+            <p className="text-fd-muted-foreground mt-3 text-sm">
+              Also installs{" "}
+              {kitDeps.map((dep, i) => (
+                <span key={dep}>
+                  {i > 0 && ", "}
+                  <code>{dep}</code>
+                </span>
+              ))}{" "}
+              as registry {kitDeps.length === 1 ? "dependency" : "dependencies"}
+              .
             </p>
           )}
-          {(item.cssVars || item.css) && (
-            <>
+        </Tab>
+        <Tab value="Manual">
+          <div className="flex flex-col gap-4">
+            {npmDeps.length > 0 && (
+              <>
+                <p className="text-sm">Install the npm dependencies:</p>
+                <CommandTabs command={`npm install ${npmDeps.join(" ")}`} />
+              </>
+            )}
+            {shadcnDeps.length > 0 && (
+              <>
+                <p className="text-sm">
+                  Add the shadcn/ui primitives it composes:
+                </p>
+                <CommandTabs
+                  command={`npx shadcn@latest add ${shadcnDeps.join(" ")}`}
+                />
+              </>
+            )}
+            {kitDeps.length > 0 && (
               <p className="text-sm">
-                Add the theme tokens to your global CSS:
+                Manually install{" "}
+                {kitDeps.map((dep, i) => {
+                  const depName = dep.replace("@pipecat/", "");
+                  return (
+                    <span key={dep}>
+                      {i > 0 && ", "}
+                      <Link
+                        className="underline underline-offset-4"
+                        href={
+                          KIT_DOC_ROUTES[depName] ??
+                          `/docs/components/${depName}`
+                        }
+                      >
+                        {dep}
+                      </Link>
+                    </span>
+                  );
+                })}{" "}
+                first, following {kitDeps.length === 1 ? "its" : "their"} manual
+                steps.
               </p>
-              <DynamicCodeBlock
-                lang="css"
-                code={[
-                  item.cssVars && cssVarsToCss(item.cssVars),
-                  item.css && cssPayloadToCss(item.css),
-                ]
-                  .filter(Boolean)
-                  .join("\n\n")}
-              />
-            </>
-          )}
-          <p className="text-sm">
-            Copy the {item.files.length === 1 ? "component" : "components"} into
-            your project:
-          </p>
-          {item.files.map((file) => (
-            <div key={file.target}>
-              <FileName>{file.target}</FileName>
-              <DynamicCodeBlock lang="tsx" code={file.content} />
-            </div>
-          ))}
-        </div>
-      </Tab>
-    </Tabs>
+            )}
+            {(item.cssVars || item.css) && (
+              <>
+                <p className="text-sm">
+                  Add the theme tokens to your global CSS:
+                </p>
+                <DynamicCodeBlock
+                  lang="css"
+                  code={[
+                    item.cssVars && cssVarsToCss(item.cssVars),
+                    item.css && cssPayloadToCss(item.css),
+                  ]
+                    .filter(Boolean)
+                    .join("\n\n")}
+                />
+              </>
+            )}
+            <p className="text-sm">
+              Copy the {item.files.length === 1 ? "component" : "components"}{" "}
+              into your project:
+            </p>
+            {item.files.map((file) => (
+              <div key={file.target}>
+                <FileName>{file.target}</FileName>
+                <DynamicCodeBlock lang="tsx" code={file.content} />
+              </div>
+            ))}
+          </div>
+        </Tab>
+      </Tabs>
+    </>
   );
 }

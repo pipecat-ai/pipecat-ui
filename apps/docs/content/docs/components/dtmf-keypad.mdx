@@ -3,6 +3,14 @@ title: DTMF Keypad
 description: Telephone keypad that sends DTMF tones over the session.
 ---
 
+<a
+  href="/storybook/?path=/story/components-dtmfkeypad--buffered"
+  target="_blank"
+  rel="noreferrer"
+>
+  Open in Storybook
+</a>
+
 <DTMFKeypadPreview />
 
 ## Installation
@@ -27,10 +35,10 @@ keypad is disabled until the transport is ready and requires a bot with DTMF sup
 
 ## Key props
 
-| Prop | Type | Description |
-| --- | --- | --- |
-| `mode` | `"buffered" \| "immediate"` | Dispatch behavior |
-| `noToneFeedback` / `toneVolume` | | Press-feedback tone |
-| `noSubLabels` | `boolean` | Hide the ABC/DEF letters |
-| `value` / `defaultValue` / `onValueChange` | | Controlled/uncontrolled buffer |
-| `onToneSent` / `onError` | | Send lifecycle callbacks |
+| Prop                                       | Type                        | Description                    |
+| ------------------------------------------ | --------------------------- | ------------------------------ |
+| `mode`                                     | `"buffered" \| "immediate"` | Dispatch behavior              |
+| `noToneFeedback` / `toneVolume`            |                             | Press-feedback tone            |
+| `noSubLabels`                              | `boolean`                   | Hide the ABC/DEF letters       |
+| `value` / `defaultValue` / `onValueChange` |                             | Controlled/uncontrolled buffer |
+| `onToneSent` / `onError`                   |                             | Send lifecycle callbacks       |

@@ -3,6 +3,14 @@ title: Text Input
 description: Message composer that injects the message into the conversation and sends it to the bot.
 ---
 
+<a
+  href="/storybook/?path=/story/components-textinput--default"
+  target="_blank"
+  rel="noreferrer"
+>
+  Open in Storybook
+</a>
+
 <TextInputPreview />
 
 ## Installation
@@ -26,17 +34,17 @@ conversation store, calls `client.sendText()`, and disables itself while disconn
 
 ## Key props
 
-| Prop | Type | Description |
-| --- | --- | --- |
-| `multiline` | `boolean` | Textarea mode |
-| `sendTextOptions` | `SendTextOptions` (from `@pipecat-ai/client-js`) | Forwarded to `client.sendText()` |
-| `noInject` | `boolean` | Skip adding the message to the local conversation |
-| `disconnectedPlaceholder` | `string` | Placeholder while disconnected |
-| `onSent` | `(message: string) => void` | Called after a successful send |
-| `buttonContent` | `ReactNode` | Replaces the send icon (text labels get a text-friendly button size) |
-| `buttonPosition` | `"left" \| "right"` | Side the send button sits on in multiline mode (default right) |
-| `buttonProps` | `InputGroupButton` props | Overrides merged onto the send button (variant, size, …) |
-| `aria-label` | `string` | Accessible name for the input (default "Message") |
+| Prop                      | Type                                             | Description                                                          |
+| ------------------------- | ------------------------------------------------ | -------------------------------------------------------------------- |
+| `multiline`               | `boolean`                                        | Textarea mode                                                        |
+| `sendTextOptions`         | `SendTextOptions` (from `@pipecat-ai/client-js`) | Forwarded to `client.sendText()`                                     |
+| `noInject`                | `boolean`                                        | Skip adding the message to the local conversation                    |
+| `disconnectedPlaceholder` | `string`                                         | Placeholder while disconnected                                       |
+| `onSent`                  | `(message: string) => void`                      | Called after a successful send                                       |
+| `buttonContent`           | `ReactNode`                                      | Replaces the send icon (text labels get a text-friendly button size) |
+| `buttonPosition`          | `"left" \| "right"`                              | Side the send button sits on in multiline mode (default right)       |
+| `buttonProps`             | `InputGroupButton` props                         | Overrides merged onto the send button (variant, size, …)             |
+| `aria-label`              | `string`                                         | Accessible name for the input (default "Message")                    |
 
 Use `TextInputView` with an `onSend` handler when managing the send yourself — it accepts
 sync or async handlers and shows a spinner while awaiting.

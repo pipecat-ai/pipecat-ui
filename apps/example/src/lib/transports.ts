@@ -1,18 +1,12 @@
 import type { Transport } from "@pipecat-ai/client-js";
 
 export type TransportType = "daily" | "smallwebrtc" | "websocket" | "moq";
-
-/**
- * Constructor options for the selected transport.
- *
- * Typed loosely on purpose: transport packages are optional installs, so
- * their option types can't be referenced here without breaking consumers
- * that don't have them installed. For precise typing, annotate at the call
- * site with the transport package's own options type.
- */
 export type TransportOptions = Record<string, unknown>;
-
+export type TransportFactory = (
+  options?: TransportOptions,
+) => Transport | Promise<Transport>;
 type TransportConstructor = new (options?: TransportOptions) => Transport;
+export type TransportLoader = () => Promise<TransportConstructor>;
 
 const INSTALL_HINTS: Record<TransportType, string> = {
   daily: "npm install @pipecat-ai/daily-transport",
@@ -20,88 +14,54 @@ const INSTALL_HINTS: Record<TransportType, string> = {
   websocket: "npm install @pipecat-ai/websocket-transport",
   moq: "npm install @pipecat-ai/moq-transport",
 };
+const loaders = new Map<TransportType, { loader: TransportLoader }[]>();
 
-/**
- * Dynamically imports the transport class for a transport type.
- *
- * Transports load on demand so they stay optional installs — consumers only
- * add the package for the transport they actually use. A missing package
- * fails with an error naming the exact install command.
- */
+/** Register before mounting usePipecatApp. Cleanup removes this registration without discarding other loaders. */
+export function registerTransport(
+  type: TransportType,
+  loader: TransportLoader,
+) {
+  if (!Object.hasOwn(INSTALL_HINTS, type))
+    throw new Error(`Unsupported transport type: ${String(type)}`);
+  const entry = { loader };
+  const entries = loaders.get(type) ?? [];
+  entries.push(entry);
+  loaders.set(type, entries);
+  return () => {
+    const index = entries.indexOf(entry);
+    if (index >= 0) entries.splice(index, 1);
+    if (!entries.length && loaders.get(type) === entries) loaders.delete(type);
+  };
+}
+
+/** Load a transport explicitly registered by the host app. */
 export async function loadTransport(
-  transportType: TransportType,
+  type: TransportType,
 ): Promise<TransportConstructor> {
-  if (!(transportType in INSTALL_HINTS)) {
-    throw new Error(`Unsupported transport type: ${String(transportType)}`);
+  if (!Object.hasOwn(INSTALL_HINTS, type)) {
+    throw new Error(`Unsupported transport type: ${String(type)}`);
+  }
+  const loader = loaders.get(type)?.at(-1)?.loader;
+  if (!loader) {
+    throw new Error(
+      `No loader registered for "${type}". Install the package (${INSTALL_HINTS[type]}) and pass transportFactory to usePipecatApp, or registerTransport("${type}", loader) before mounting it.`,
+    );
   }
   try {
-    switch (transportType) {
-      case "daily": {
-        const { DailyTransport } = await import(
-          // Optional install: @ts-ignore, not @ts-expect-error — the latter
-          // inverts into an error once the package IS present.
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          "@pipecat-ai/daily-transport"
-        );
-        return DailyTransport as TransportConstructor;
-      }
-      case "smallwebrtc": {
-        const { SmallWebRTCTransport } = await import(
-          // Optional install: @ts-ignore, not @ts-expect-error — the latter
-          // inverts into an error once the package IS present.
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          "@pipecat-ai/small-webrtc-transport"
-        );
-        return SmallWebRTCTransport as TransportConstructor;
-      }
-      case "websocket": {
-        const { WebSocketTransport } = await import(
-          // Optional install: @ts-ignore, not @ts-expect-error — the latter
-          // inverts into an error once the package IS present.
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          "@pipecat-ai/websocket-transport"
-        );
-        return WebSocketTransport as TransportConstructor;
-      }
-      case "moq": {
-        const { MoqTransport } = await import(
-          // MoQ's libav.js dependency doesn't survive strict bundlers, so
-          // webpack/Turbopack skip this import entirely (alias the package
-          // yourself to opt in there); Vite resolves it normally.
-          /* webpackIgnore: true */ /* turbopackIgnore: true */
-          // Optional install: @ts-ignore, not @ts-expect-error — the latter
-          // inverts into an error once the package IS present.
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore
-          "@pipecat-ai/moq-transport"
-        );
-        return MoqTransport as TransportConstructor;
-      }
-    }
-    // Unreachable: transportType was validated against INSTALL_HINTS above.
-    throw new Error(`Unsupported transport type: ${String(transportType)}`);
-  } catch (loadError) {
-    const message =
-      loadError instanceof Error ? loadError.message : String(loadError);
+    return await loader();
+  } catch (cause) {
     throw new Error(
-      `Failed to load transport "${transportType}". Make sure the package ` +
-        `is installed: ${INSTALL_HINTS[transportType]}. Original error: ${message}`,
-      { cause: loadError },
+      `Failed to load transport "${type}": ${cause instanceof Error ? cause.message : String(cause)}. Check the package is installed (${INSTALL_HINTS[type]}).`,
+      { cause },
     );
   }
 }
 
-/**
- * Creates a transport instance for a transport type, loading the transport
- * package on demand. See {@link loadTransport} for the install semantics.
- */
+/** Create a transport registered by the host, without importing optional packages here. */
 export async function createTransport(
-  transportType: TransportType,
+  type: TransportType,
   options?: TransportOptions,
 ): Promise<Transport> {
-  const TransportClass = await loadTransport(transportType);
-  return new TransportClass(options);
+  const Constructor = await loadTransport(type);
+  return new Constructor(options);
 }

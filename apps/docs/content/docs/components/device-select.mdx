@@ -3,6 +3,14 @@ title: Device Select
 description: Media device picker for microphones, speakers, or cameras.
 ---
 
+<a
+  href="/storybook/?path=/story/components-deviceselect--default"
+  target="_blank"
+  rel="noreferrer"
+>
+  Open in Storybook
+</a>
+
 <DeviceSelectPreview />
 
 ## Installation
@@ -35,14 +43,14 @@ import { Button } from "@/components/ui/button";
 
 ## Key props
 
-| Prop | Type | Description |
-| --- | --- | --- |
-| `kind` | `"audioinput" \| "audiooutput" \| "videoinput"` | Which device list to control |
-| `placeholder` | `string` | Select placeholder (kind-aware default) |
-| `guide` | `ReactNode` | Leading icon/label inside the select trigger |
-| `isLoading` / `loadingText` | `boolean` / `ReactNode` | Loading state; derived from the client in connected mode |
-| `unavailableText` | `ReactNode` | Blocked/error message; derived in connected mode, overridable |
-| `menuLabel` | `ReactNode \| null` | Dropdown heading (on `DeviceDropdownContent`); `null` hides it |
+| Prop                        | Type                                            | Description                                                    |
+| --------------------------- | ----------------------------------------------- | -------------------------------------------------------------- |
+| `kind`                      | `"audioinput" \| "audiooutput" \| "videoinput"` | Which device list to control                                   |
+| `placeholder`               | `string`                                        | Select placeholder (kind-aware default)                        |
+| `guide`                     | `ReactNode`                                     | Leading icon/label inside the select trigger                   |
+| `isLoading` / `loadingText` | `boolean` / `ReactNode`                         | Loading state; derived from the client in connected mode       |
+| `unavailableText`           | `ReactNode`                                     | Blocked/error message; derived in connected mode, overridable  |
+| `menuLabel`                 | `ReactNode \| null`                             | Dropdown heading (on `DeviceDropdownContent`); `null` hides it |
 
 States follow the kit convention: `isLoading` → `unavailableText` → interactive. The file
 also exports `usePipecatDevices(kind)` and `usePipecatDeviceState(kind)` — device lists and

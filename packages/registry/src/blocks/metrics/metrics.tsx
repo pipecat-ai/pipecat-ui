@@ -61,12 +61,7 @@ function MetricsTabs({
   );
 }
 
-/**
- * Metrics dashboard with a tab navigator switching between the performance
- * section (per-processor latency) and the usage section (token, character,
- * and audio totals). Fully props-driven; see Metrics for the store-wired
- * variant, or compose MetricsPerformanceView / MetricsUsageView directly.
- */
+/** Props-driven performance and usage tabs. */
 export function MetricsView({
   series,
   tokens,
@@ -99,12 +94,7 @@ export interface MetricsProps {
   className?: string;
 }
 
-/**
- * Metrics dashboard wired to the shared RTVI metrics store. Both sections
- * read the same store, so switching tabs never loses data — the store keeps
- * collecting while a tab is unmounted. Must be rendered inside a
- * PipecatClientProvider.
- */
+/** Requires PipecatClientProvider. Keeps collection active while individual tabs are unmounted. */
 export function Metrics({
   defaultTab,
   performanceProps,

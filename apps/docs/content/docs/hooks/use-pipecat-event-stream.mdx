@@ -48,24 +48,24 @@ drops the not-yet-flushed batch, so pre-clear events never resurface.
 
 ## Options
 
-| Option | Type | Description |
-| --- | --- | --- |
-| `maxEvents` | `number` | Raises the shared log cap (default 500). Largest requested value wins. |
-| `includeEvents` | `string[]` | Only these types pass this subscriber's filter (wins over `ignoreEvents`). |
-| `ignoreEvents` | `string[]` | Types hidden from this subscriber. |
-| `groupConsecutive` | `boolean` | Also derive `groups`, merging consecutive same-key events. |
-| `groupKey` | `(event) => string` | Grouping key (default: event type). |
-| `onEvent` | `(event) => void` | Fired once per new filter-passing event; backlog present at mount is skipped. |
+| Option             | Type                | Description                                                                   |
+| ------------------ | ------------------- | ----------------------------------------------------------------------------- |
+| `maxEvents`        | `number`            | Raises the shared log cap (default 500). Largest requested value wins.        |
+| `includeEvents`    | `string[]`          | Only these types pass this subscriber's filter (wins over `ignoreEvents`).    |
+| `ignoreEvents`     | `string[]`          | Types hidden from this subscriber.                                            |
+| `groupConsecutive` | `boolean`           | Also derive `groups`, merging consecutive same-key events.                    |
+| `groupKey`         | `(event) => string` | Grouping key (default: event type).                                           |
+| `onEvent`          | `(event) => void`   | Fired once per new filter-passing event; backlog present at mount is skipped. |
 
 ## Returns
 
-| Field | Type | Description |
-| --- | --- | --- |
-| `events` | `readonly PipecatEventLog[]` | This subscriber's filtered view, oldest first (`id`, `type`, `data`, `timestamp`). |
-| `groups` | `readonly PipecatEventGroup[]` | Consecutive-run groups (empty unless `groupConsecutive`). |
-| `paused` | `boolean` | Shared pause state — while true, capture drops new events for everyone. |
-| `setPaused` | `(paused: boolean) => void` | Toggle capture. Listeners stay attached. |
-| `clear` | `() => void` | Clears the shared log for every subscriber. |
+| Field       | Type                           | Description                                                                        |
+| ----------- | ------------------------------ | ---------------------------------------------------------------------------------- |
+| `events`    | `readonly PipecatEventLog[]`   | This subscriber's filtered view, oldest first (`id`, `type`, `data`, `timestamp`). |
+| `groups`    | `readonly PipecatEventGroup[]` | Consecutive-run groups (empty unless `groupConsecutive`).                          |
+| `paused`    | `boolean`                      | Shared pause state — while true, capture drops new events for everyone.            |
+| `setPaused` | `(paused: boolean) => void`    | Toggle capture. Listeners stay attached.                                           |
+| `clear`     | `() => void`                   | Clears the shared log for every subscriber.                                        |
 
 The zustand store itself is exported as `usePipecatEventStreamStore` for
 tests and advanced use.

@@ -34,12 +34,7 @@ export interface AudioVisualizerBarViewProps {
   barOrigin?: "top" | "bottom" | "center";
   /** Bar end style; also shapes the resting dots. */
   barLineCap?: "round" | "square";
-  /**
-   * How quickly bars chase the live spectrum while speaking: the fraction
-   * of the remaining distance covered per frame (0–1, default 0.5). Lower
-   * is smoother, 1 disables smoothing. State transitions keep their own
-   * fixed ease.
-   */
+  /** Spectrum smoothing per frame (0–1, default 0.5); 1 disables smoothing. */
   barSpeed?: number;
   /** Disable the falling peak lines (on by default). */
   noPeaks?: boolean;
@@ -56,12 +51,7 @@ export interface AudioVisualizerBarViewProps {
    * (knocks restore full opacity). 0 keeps peaks visible forever.
    */
   peakFadeDuration?: number;
-  /**
-   * Override: a session is being established — rolls opacity across the
-   * resting dots. Wins over isThinking; the track is ignored while set.
-   * Without overrides the visualizer derives silent/speaking from the
-   * track on its own.
-   */
+  /** Connecting takes precedence over thinking and ignores the audio track. */
   isConnecting?: boolean;
   /** Opacity-roll speed for the connecting override. */
   connectingSpeed?: number;
@@ -84,17 +74,7 @@ export interface AudioVisualizerBarViewProps {
   className?: string;
 }
 
-/**
- * Canvas-2D audio spectrum visualizer for any MediaStreamTrack: mel-scale
- * frequency bands tuned to the voice range (200 Hz–8 kHz, with the
- * high-frequency rolloff compensated so all bars compete fairly), bars
- * smoothed at a configurable barSpeed, and bouncing peak lines. Silent and
- * speaking derive from the track; the isConnecting / isThinking overrides
- * opt into the kit's other shared lifecycle states, and every state change
- * eases briefly instead of snapping. The resolved VisualizerState is
- * exposed as data-state, and the canvas pads itself so peaks (plus their
- * offset) always render inside it.
- */
+/** Props-driven voice spectrum; connecting and thinking override track-derived state. */
 export const AudioVisualizerBarView = memo(function AudioVisualizerBarView({
   track = null,
   backgroundColor = "transparent",
@@ -164,7 +144,6 @@ export const AudioVisualizerBarView = memo(function AudioVisualizerBarView({
     };
   }, [track, isConnecting, isThinking]);
 
-  // Canvas setup + animation loop
   useEffect(() => {
     if (!canvasRef.current) return;
 
@@ -457,12 +436,7 @@ export interface AudioVisualizerBarProps extends Omit<
   participantType: ParticipantType;
 }
 
-/**
- * Audio spectrum visualizer wired to a Pipecat media track. Pass
- * isConnecting / isThinking to reflect session state; silent and speaking
- * follow the participant's audio automatically. Must be rendered inside a
- * PipecatClientProvider.
- */
+/** Requires PipecatClientProvider; silence and speech follow the participant track. */
 export function AudioVisualizerBar({
   participantType,
   ...props

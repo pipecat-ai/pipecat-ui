@@ -3,6 +3,14 @@ title: User Screen Control
 description: Screen-share toggle with a preview tile while sharing.
 ---
 
+<a
+  href="/storybook/?path=/story/components-userscreencontrol--default"
+  target="_blank"
+  rel="noreferrer"
+>
+  Open in Storybook
+</a>
+
 <UserScreenControlPreview />
 
 ## Installation
@@ -23,10 +31,10 @@ can only start on a live session.
 
 ## Key props
 
-| Prop | Type | Description |
-| --- | --- | --- |
-| `noPreview` | `boolean` | Never show the tile, even while sharing |
-| `noIcon` | `boolean` | Hide the monitor icon |
-| `loadingText` | `ReactNode` | Text next to the spinner while loading (spinner only by default) |
-| `videoProps` | `PipecatClientVideo` props | Passed to the underlying video element |
-| `activeText` / `inactiveText` | `ReactNode` | Toggle labels |
+| Prop                          | Type                       | Description                                                      |
+| ----------------------------- | -------------------------- | ---------------------------------------------------------------- |
+| `noPreview`                   | `boolean`                  | Never show the tile, even while sharing                          |
+| `noIcon`                      | `boolean`                  | Hide the monitor icon                                            |
+| `loadingText`                 | `ReactNode`                | Text next to the spinner while loading (spinner only by default) |
+| `videoProps`                  | `PipecatClientVideo` props | Passed to the underlying video element                           |
+| `activeText` / `inactiveText` | `ReactNode`                | Toggle labels                                                    |

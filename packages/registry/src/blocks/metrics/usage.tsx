@@ -41,13 +41,7 @@ export interface MetricsUsageViewProps {
   className?: string;
 }
 
-/**
- * Usage metrics: the session's running totals — LLM tokens (including
- * cache-read and reasoning counts when providers report them), TTS
- * characters, and STT audio seconds — as tiles plus growth charts.
- * Chrome-free — wrap it in your own card or panel. STT audio requires
- * pipecat server ≥ 1.7 with usage metrics enabled.
- */
+/** Session usage totals. STT audio requires Pipecat server ≥1.7 with usage metrics enabled. */
 export function MetricsUsageView({
   series,
   tokens,

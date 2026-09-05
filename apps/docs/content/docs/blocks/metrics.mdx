@@ -3,6 +3,14 @@ title: Metrics
 description: Metrics dashboard block — a Performance/Usage tab navigator over per-processor latency charts and running usage totals.
 ---
 
+<a
+  href="/storybook/?path=/story/blocks-metrics--tabbed"
+  target="_blank"
+  rel="noreferrer"
+>
+  Open in Storybook
+</a>
+
 <MetricsPreview />
 
 ## Installation
@@ -45,9 +53,9 @@ block is chrome-free — wrap it in your own `Card` or panel.
 
 ## Key props
 
-| Prop | Type | Description |
-| --- | --- | --- |
-| `defaultTab` | `"performance" \| "usage"` | Initially selected tab (default `"performance"`). |
-| `performanceProps` | `MetricsPerformanceProps` | Forwarded to the performance section: `categories`, `noTiles`, `noCharts`, `ignoreProcessors`, `empty`. |
-| `usageProps` | `MetricsUsageProps` | Forwarded to the usage section: `categories`, `noTiles`, `noCharts`, `ignoreProcessors`, `empty`. |
-| `series` / `tokens` | `MetricSeries[]` / `TokenTotals` | `MetricsView` only — feed both sections directly. |
+| Prop                | Type                             | Description                                                                                             |
+| ------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `defaultTab`        | `"performance" \| "usage"`       | Initially selected tab (default `"performance"`).                                                       |
+| `performanceProps`  | `MetricsPerformanceProps`        | Forwarded to the performance section: `categories`, `noTiles`, `noCharts`, `ignoreProcessors`, `empty`. |
+| `usageProps`        | `MetricsUsageProps`              | Forwarded to the usage section: `categories`, `noTiles`, `noCharts`, `ignoreProcessors`, `empty`.       |
+| `series` / `tokens` | `MetricSeries[]` / `TokenTotals` | `MetricsView` only — feed both sections directly.                                                       |

@@ -70,6 +70,132 @@ async function renderApp(initialProps: UsePipecatAppOptions = {}) {
 }
 
 describe("usePipecatApp", () => {
+  it("uses the app's explicit factory without loading unrelated packages", async () => {
+    const factory = vi.fn(async () => new StubTransport());
+    const options = { enableCamera: false };
+    const { result } = await renderApp({
+      transportFactory: factory,
+      transportOptions: options,
+    });
+    expect(result.current.client).not.toBeNull();
+    expect(factory).toHaveBeenCalledWith(options);
+    expect(transports.createTransport).not.toHaveBeenCalled();
+  });
+
+  it("surfaces a rejected explicit factory", async () => {
+    const { result } = renderHook(() =>
+      usePipecatApp({
+        transportFactory: async () => {
+          throw new Error("factory failed");
+        },
+      }),
+    );
+    await waitFor(() => expect(result.current.error).toBe("factory failed"));
+    expect(result.current.client).toBeNull();
+  });
+
+  it("surfaces initialization callback failures", async () => {
+    const { result } = await renderApp({
+      onClient: () => {
+        throw new Error("listener setup failed");
+      },
+    });
+    await waitFor(() =>
+      expect(result.current.error).toBe("listener setup failed"),
+    );
+  });
+
+  it("surfaces disconnect failures without rejecting to the UI", async () => {
+    const { result } = await renderApp();
+    disconnectSpy.mockRejectedValue(new Error("disconnect failed"));
+    await act(async () => {
+      await result.current.disconnect();
+    });
+    expect(result.current.error).toBe(
+      "Failed to disconnect: disconnect failed",
+    );
+  });
+
+  it("handles a rejected disconnect during unmount", async () => {
+    const { unmount } = await renderApp();
+    disconnectSpy.mockRejectedValue(new Error("cleanup failed"));
+    unmount();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(disconnectSpy).toHaveBeenCalled();
+  });
+
+  it("ignores repeated connect clicks while startBot is pending", async () => {
+    let resolveStart!: (value: Record<string, unknown>) => void;
+    startBotSpy.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveStart = resolve;
+        }),
+    );
+    const { result } = await renderApp({
+      startBotParams: { endpoint: "/start" },
+    });
+    let pending!: Promise<void>;
+    await act(async () => {
+      pending = result.current.connect();
+      await result.current.connect();
+    });
+    expect(startBotSpy).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      resolveStart({});
+      await pending;
+    });
+    expect(connectSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not connect a late startBot response after unmount", async () => {
+    let resolveStart!: (value: Record<string, unknown>) => void;
+    startBotSpy.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveStart = resolve;
+        }),
+    );
+    const { result, unmount } = await renderApp({
+      startBotParams: { endpoint: "/start" },
+    });
+    let pending!: Promise<void>;
+    await act(async () => {
+      pending = result.current.connect();
+    });
+    unmount();
+    await act(async () => {
+      resolveStart({});
+      await pending;
+    });
+    expect(connectSpy).not.toHaveBeenCalled();
+  });
+
+  it("does not connect a late endpoint response after disconnect", async () => {
+    let resolveStart!: (value: Record<string, unknown>) => void;
+    startBotSpy.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveStart = resolve;
+        }),
+    );
+    const { result } = await renderApp({
+      connectParams: { endpoint: "/start" },
+    });
+    let pending!: Promise<void>;
+    await act(async () => {
+      pending = result.current.connect();
+    });
+    await act(async () => {
+      await result.current.disconnect();
+      resolveStart({});
+      await pending;
+    });
+    expect(connectSpy).not.toHaveBeenCalled();
+  });
+
   it("builds a client for the default transport", async () => {
     const onClient = vi.fn();
     const { result } = await renderApp({ onClient });
@@ -112,12 +238,13 @@ describe("usePipecatApp", () => {
     expect(result.current.client).toBeNull();
   });
 
-  it("routes endpoint-shaped connectParams to startBotAndConnect", async () => {
+  it("starts a bot then connects for endpoint-shaped connectParams", async () => {
     const connectParams = { endpoint: "/api/start" };
     const { result } = await renderApp({ connectParams });
     await act(() => result.current.connect());
-    expect(startBotAndConnectSpy).toHaveBeenCalledWith(connectParams);
-    expect(connectSpy).not.toHaveBeenCalled();
+    expect(startBotSpy).toHaveBeenCalledWith(connectParams);
+    expect(connectSpy).toHaveBeenCalledWith({});
+    expect(startBotAndConnectSpy).not.toHaveBeenCalled();
   });
 
   it("connects directly with plain connectParams", async () => {

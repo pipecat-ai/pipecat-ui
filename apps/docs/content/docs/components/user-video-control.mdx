@@ -3,6 +3,14 @@ title: User Video Control
 description: Camera toggle with preview tile and a camera picker in a split-button dropdown.
 ---
 
+<a
+  href="/storybook/?path=/story/components-uservideocontrol--tile"
+  target="_blank"
+  rel="noreferrer"
+>
+  Open in Storybook
+</a>
+
 <UserVideoControlPreview />
 
 ## Installation
@@ -27,11 +35,11 @@ with a reason.
 
 ## Key props
 
-| Prop | Type | Description |
-| --- | --- | --- |
-| `noVideo` | `boolean` | Render only the toggle, without the preview tile |
-| `noDevicePicker` | `boolean` | Hide the camera dropdown |
-| `noIcon` | `boolean` | Hide the camera icon |
-| `loadingText` | `ReactNode` | Text next to the spinner while devices initialize (spinner only by default) |
-| `videoProps` | `PipecatClientVideo` props | Passed to the underlying video element |
-| `activeText` / `inactiveText` | `ReactNode` | Toggle labels |
+| Prop                          | Type                       | Description                                                                 |
+| ----------------------------- | -------------------------- | --------------------------------------------------------------------------- |
+| `noVideo`                     | `boolean`                  | Render only the toggle, without the preview tile                            |
+| `noDevicePicker`              | `boolean`                  | Hide the camera dropdown                                                    |
+| `noIcon`                      | `boolean`                  | Hide the camera icon                                                        |
+| `loadingText`                 | `ReactNode`                | Text next to the spinner while devices initialize (spinner only by default) |
+| `videoProps`                  | `PipecatClientVideo` props | Passed to the underlying video element                                      |
+| `activeText` / `inactiveText` | `ReactNode`                | Toggle labels                                                               |

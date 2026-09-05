@@ -13,12 +13,12 @@ mode.
 Two small semantic groups are added to your global CSS by the registry (via `cssVars`) the
 first time a component that needs them is installed:
 
-| Token | Used for | Default |
-| --- | --- | --- |
-| `--active-background` / `--active-foreground` | Media "on" states: connect button, camera/screen active | Green |
-| `--inactive-background` / `--inactive-foreground` | Media "off" states: muted microphone | Red |
-| `--agent` | Agent/assistant role color in conversations | Violet |
-| `--client` | User/client role color in conversations | Blue |
+| Token                                             | Used for                                                | Default |
+| ------------------------------------------------- | ------------------------------------------------------- | ------- |
+| `--active-background` / `--active-foreground`     | Media "on" states: connect button, camera/screen active | Green   |
+| `--inactive-background` / `--inactive-foreground` | Media "off" states: muted microphone                    | Red     |
+| `--agent`                                         | Agent/assistant role color in conversations             | Violet  |
+| `--client`                                        | User/client role color in conversations                 | Blue    |
 
 Each pair follows the shadcn surface convention — the `-background` token fills the
 element, the `-foreground` token colors content on top of it. They're plain CSS variables

@@ -1,15 +1,20 @@
-# Pipecat Voice UI Kit
+# Pipecat UI
 
-[![Docs](https://img.shields.io/badge/docs-voiceuikit.pipecat.ai-blue)](https://voiceuikit.pipecat.ai)
-[![Storybook](https://img.shields.io/badge/storybook-browse-ff4785?logo=storybook&logoColor=white)](https://voiceuikit.pipecat.ai)
-[![Status](https://img.shields.io/badge/status-v1_beta-orange)](https://github.com/pipecat-ai/voice-ui-kit)
-[![License](https://img.shields.io/badge/license-BSD--2--Clause-green)](LICENSE)
+[![Docs](https://img.shields.io/badge/docs-ui.pipecat.ai-blue)](https://ui.pipecat.ai)
+[![Storybook](https://img.shields.io/badge/storybook-browse-ff4785?logo=storybook&logoColor=white)](https://ui.pipecat.ai)
+[![Status](https://img.shields.io/badge/status-v1_beta-orange)](https://github.com/pipecat-ai/pipecat-ui)
+
+> [!IMPORTANT]
+> Pipecat UI is a shadcn rebuild of the
+> [Voice UI Kit repository](https://github.com/pipecat-ai/voice-ui-kit), which
+> will soon be deprecated. Components now install as source through the shadcn
+> CLI, replacing the previous npm package distribution (≤0.13.x).
 
 <!-- TODO: point the Storybook badge at the hosted Storybook once it's live -->
 
-<img width="100%" src="image.png" alt="Pipecat Voice UI Kit components" />
+<img width="100%" src="image.png" alt="Pipecat UI components" />
 
-The UI layer for voice agents. Voice UI Kit is a
+The UI layer for voice agents. Pipecat UI is a
 [shadcn registry](https://ui.shadcn.com/docs/registry) of components for
 building on [Pipecat](https://github.com/pipecat-ai/pipecat)'s real-time
 platform — mic and camera controls, live transcripts with karaoke text,
@@ -17,26 +22,21 @@ voice-tuned audio visualizers, session state, and more, already wired to the
 client. Components install as source into your project, styled by your theme
 and yours to edit.
 
-> [!IMPORTANT]
-> **v1.0 rebuild.** The npm package `@pipecat-ai/voice-ui-kit` (≤0.13.x) is the
-> previous generation — see the `main` branch. This branch distributes
-> components via the shadcn CLI instead of npm.
-
 ## What's inside
 
 - 🎛️ **Session controls** — connect button driven by transport state, mic
   control with push-to-talk and a live visualizer, camera and screen-share
   toggles with preview tiles, device pickers, DTMF keypad
-- 📈 **Audio visualizers** — canvas bar, radial, and wave renderers sharing a
-  voice-tuned mel-band core
+- 📈 **Audio visualizers** — canvas bar and radial renderers plus a WebGL wave
+  renderer sharing a voice-tuned mel-band core
 - 💬 **Conversation UI** — live scrolling transcript with roles and karaoke
   text, message composer, caption-style overlay for bot speech
 - 🔍 **Session insight** — client/agent status rows, session metadata, bot
   audio output with a shared volume store
 - 🪝 **Bootstrap hook** — `use-pipecat-app` builds the client and owns the
-  connect lifecycle, lazy-loading whichever transport you pick
-- 🧱 **Blocks** — larger assembled surfaces (console, …) composed from the
-  components — _coming soon_
+  connect lifecycle, using the transport factory you supply
+- 🧱 **Blocks** — a metrics dashboard composed from the components; the console
+  remains a local development preview and is not published in the registry
 - 🎨 **Your theme, your code** — stock Base UI primitives, `data-state`
   attributes on everything, a tiny semantic token set you can restyle
 
@@ -48,8 +48,8 @@ Pipecat client, and a props-driven `*View` export for custom state management.
 - **Node.js** 22+
 - **React** 19
 - **Tailwind CSS** 4
-- **[shadcn/ui](https://ui.shadcn.com/docs/installation)** — Base UI style (the
-  CLI 4.x default)
+- **[shadcn/ui](https://ui.shadcn.com/docs/installation)** — **`base-nova` style**
+  (Base UI primitives)
 
 > [!NOTE]
 > Everything else — shadcn primitives, the Pipecat client SDKs, npm deps —
@@ -64,7 +64,7 @@ Pipecat client, and a props-driven `*View` export for custom state management.
 ```jsonc
 {
   "registries": {
-    "@pipecat": "https://voiceuikit.pipecat.ai/r/{name}.json",
+    "@pipecat": "https://ui.pipecat.ai/r/{name}.json",
   },
 }
 ```
@@ -86,6 +86,7 @@ theme tokens merge into your globals.css.
 "use client";
 
 import { PipecatClientProvider } from "@pipecat-ai/client-react";
+import { SmallWebRTCTransport } from "@pipecat-ai/small-webrtc-transport";
 
 import { ConnectButton } from "@/components/pipecat/connect-button";
 import { Conversation } from "@/components/pipecat/conversation";
@@ -94,6 +95,7 @@ import { usePipecatApp } from "@/hooks/use-pipecat-app";
 
 export default function VoiceApp() {
   const { client, connect, disconnect } = usePipecatApp({
+    transportFactory: () => new SmallWebRTCTransport(),
     connectParams: { endpoint: "/api/start" },
   });
 
@@ -119,7 +121,8 @@ recorded sessions, or a non-Pipecat backend entirely.
 
 The client SDKs (`@pipecat-ai/client-js`, `@pipecat-ai/client-react`) install
 automatically with each component. **Transport packages stay optional** — they
-load on demand, so install only the one your app actually connects with:
+are imported by your app and passed as `transportFactory`, so install only the
+one your app actually connects with:
 
 | Transport             | Package                              |
 | --------------------- | ------------------------------------ |
@@ -128,8 +131,9 @@ load on demand, so install only the one your app actually connects with:
 | WebSocket             | `@pipecat-ai/websocket-transport`    |
 | MoQ                   | `@pipecat-ai/moq-transport`          |
 
-A missing transport surfaces as a client error naming the exact install
-command rather than a build failure.
+For lazy loading, pass an async factory that imports the selected package, or
+register an app-owned loader with `registerTransport`. The shipped helper does
+not import unused transports, so they do not need to be installed to build.
 
 ## Theme tokens
 
@@ -141,7 +145,7 @@ registry `cssVars` (and are yours to restyle):
 
 ## Documentation
 
-- **[Component docs](https://voiceuikit.pipecat.ai)** — live previews,
+- **[Component docs](https://ui.pipecat.ai)** — live previews,
   configurable examples, and installation for every item
 - **Storybook** — every component and state in isolation _(hosted link coming
   soon; run locally with `pnpm dev`)_
@@ -156,7 +160,7 @@ The monorepo is the registry plus two host apps that consume it like a real
 project:
 
 - `packages/registry` — the product: `registry.json` + source under
-  `src/components/pipecat/`, shared modules in `src/lib/`, hooks in
+  `src/components/`, shared modules in `src/lib/`, hooks in
   `src/hooks/`, vitest suites in `tests/`
 - `apps/docs` — Fumadocs site: component docs with live previews, serves the
   registry at `/r/{name}.json`
@@ -167,17 +171,52 @@ project:
 pnpm install
 pnpm dev        # storybook on :6006 + docs on :3600
 pnpm build      # registry build + storybook build + docs build
+pnpm registry:check # manifest, dependencies, source and coverage checks
 pnpm typecheck && pnpm lint && pnpm test
 ```
 
 To add a registry item:
 
-1. Create `packages/registry/src/components/pipecat/<name>.tsx` with a
+1. Create `packages/registry/src/components/<name>.tsx` with a
    co-located `<name>.stories.tsx`
 2. Add a test in `packages/registry/tests/<name>.test.tsx`
 3. Add the item's manifest entry to `packages/registry/registry.json`
 4. Run `node apps/docs/scripts/sync-registry.mjs`, then
    `pnpm typecheck && pnpm lint && pnpm test`
+
+The docs app builds and serves the registry at `https://ui.pipecat.ai/r`.
+Generated JSON is not committed. CI checks the manifest and fresh installations;
+its build artifact is available for review. The example app is a client-only
+reference, run locally with `pnpm --filter @pipecat-ui/example dev`.
+
+Merges to `main` deploy the docs and registry together. Set the repository version
+locally in root `package.json` when a release is needed; a successful deployment
+creates a GitHub release if that version has not been released. Components do not
+have independent versions. See [AGENTS.md](AGENTS.md) for development conventions.
+
+Connect the repository through the Vercel GitHub integration with two projects:
+
+| Project                | Root directory   | Output                         |
+| ---------------------- | ---------------- | ------------------------------ |
+| `pipecat-ui`           | `apps/docs`      | Next.js docs and `/r` registry |
+| `pipecat-ui-storybook` | `apps/storybook` | `storybook-static`             |
+
+Use `main` as each project's production branch and enable access to files outside
+its root directory. Both apps include `vercel.json`; CI builds and validates them,
+and the integration handles deployment without a CLI token. The example stays local.
+
+Assign `ui.pipecat.ai` to the docs project. Its `/storybook/` route proxies to the
+Storybook project; set `STORYBOOK_ORIGIN` in the docs project if the Storybook
+production URL differs from `https://pipecat-ui-storybook.vercel.app`. That origin
+must be publicly accessible for the proxy to work. Component pages link directly
+to their stories.
+
+The release workflow listens for the docs project's successful production
+promotions, checks CI for that exact commit, and creates the repository version's
+GitHub release if missing. If the docs project has a different name, set the
+GitHub repository variable `VERCEL_DOCS_PROJECT`. Enable Vercel's repository
+dispatch events. Use Vercel Deployment Checks if production promotion should
+also wait for CI; the integration otherwise builds alongside GitHub Actions.
 
 ## Built with
 
@@ -194,17 +233,5 @@ To add a registry item:
 
 - 💬 **[Discord](https://discord.gg/pipecat)** — chat with the Pipecat team and
   community
-- 🐛 **[GitHub issues](https://github.com/pipecat-ai/voice-ui-kit/issues)** —
+- 🐛 **[GitHub issues](https://github.com/pipecat-ai/pipecat-ui/issues)** —
   bugs and feature requests
-
-## License
-
-BSD-2-Clause
-
----
-
-<div align="center">
-
-Made with ❤️ by the [Pipecat](https://pipecat.ai) team
-
-</div>

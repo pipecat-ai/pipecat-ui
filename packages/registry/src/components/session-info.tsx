@@ -149,12 +149,7 @@ export interface SessionInfoProps extends Omit<
   participantId?: string;
 }
 
-/**
- * Session metadata wired to the Pipecat client: transport type, RTVI
- * client/server versions, plus any ids you pass in.
- * Must be rendered inside a PipecatClientProvider. Requires a
- * TooltipProvider ancestor for the copy buttons.
- */
+/** Requires PipecatClientProvider and TooltipProvider for the copy buttons. */
 export function SessionInfo(props: SessionInfoProps) {
   const client = usePipecatClient();
   const [serverVersion, setServerVersion] = useState<string | undefined>(

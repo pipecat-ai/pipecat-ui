@@ -3,6 +3,14 @@ title: Metric
 description: Single-datapoint metric tile — label, big tabular value, optional unit — fully generic and props-driven.
 ---
 
+<a
+  href="/storybook/?path=/story/components-metric--basic"
+  target="_blank"
+  rel="noreferrer"
+>
+  Open in Storybook
+</a>
+
 <MetricPreview />
 
 ## Installation
@@ -51,10 +59,10 @@ A tile exposes `data-state="live" | "empty"` and `data-slot="metric"` /
 
 ## Key props
 
-| Prop | Type | Description |
-| --- | --- | --- |
-| `label` | `ReactNode` | Tile label. |
-| `value` | `number \| null` | Datapoint; null/undefined/non-finite renders the empty state. |
-| `unit` | `string` | Unit suffix rendered after the value. |
+| Prop     | Type                        | Description                                                               |
+| -------- | --------------------------- | ------------------------------------------------------------------------- |
+| `label`  | `ReactNode`                 | Tile label.                                                               |
+| `value`  | `number \| null`            | Datapoint; null/undefined/non-finite renders the empty state.             |
+| `unit`   | `string`                    | Unit suffix rendered after the value.                                     |
 | `format` | `(value: number) => string` | Value formatter (default: locale string, ≤1 decimal). Memoized per value. |
-| `empty` | `ReactNode` | Rendered when there is no value (default `–`). |
+| `empty`  | `ReactNode`                 | Rendered when there is no value (default `–`).                            |

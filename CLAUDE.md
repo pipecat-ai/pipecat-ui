@@ -1,9 +1,11 @@
-# voice-ui-kit
+# pipecat-ui
+
+Read [AGENTS.md](AGENTS.md) for repository and coding conventions.
 
 A shadcn registry of voice/agent UI components for [Pipecat](https://pipecat.ai).
 Components ship as **source code** that consumers copy into their app with
 `npx shadcn add @pipecat/<name>` — there is no runtime package. Everything
-composes stock shadcn/ui primitives (**Base UI** flavor) that install
+composes stock shadcn/ui primitives (**`base-nova`**, Base UI primitives) that install
 automatically as registry dependencies; the kit ships zero primitives of its own.
 
 ## Structure
@@ -22,8 +24,8 @@ packages/registry/       The product
   src/lib/                 Shared non-component modules → consumer lib/ via
                            type-based placement (no targets; deduped), e.g.
                            visualizer.ts — visualizer core (states, mel bands, analyser)
-                           transports.ts — dynamic per-type transport loading
-                           (zero transport deps; @ts-ignore'd optional imports)
+                           transports.ts — app-owned transport loaders/factories
+                           (zero imports of optional transport packages)
   src/hooks/               registry:hook items → consumer hooks/ via
                            type-based placement (use-pipecat-app,
                            use-pipecat-metrics, use-pipecat-event-stream)
@@ -78,9 +80,14 @@ each host's globals.
   `use-pipecat-app` and renders its own `PipecatClientProvider` — never nest
   it inside another provider. Themes are the consumer's job: no theme props,
   just the `headerSlot`.
-- Transports are optional installs: `lib/transports.ts` dynamic-imports the
-  package per `transportType` and a missing one surfaces an install-hint
-  error. No transport packages in any item's `dependencies`.
+- Transports are optional installs: callers pass `transportFactory` to
+  `usePipecatApp`, or register their own lazy loader with `registerTransport`.
+  Never import optional packages in the shipped helper: bundlers resolve
+  even literal dynamic imports for transports the consumer has not installed.
+  No transport packages in any item's `dependencies`.
+
+The console block is retained for local development but is not currently
+published in `registry.json`.
 
 ## Build & verify
 
@@ -89,6 +96,7 @@ pnpm dev                 # turbo dev: storybook (6006) + docs (3600)
 pnpm build               # turbo: shadcn build (registry) + app builds
 pnpm lint / typecheck    # eslint flat config / per-app tsc
 pnpm test                # turbo: vitest (host apps/storybook, jsdom)
+pnpm registry:check      # schema, dependency/import and coverage validation
 ```
 
 After editing registry source, run the full loop:
@@ -104,6 +112,10 @@ pnpm test
 Docs previews import registry source directly (hot-reloads), but the
 Installation tabs render from the built JSON — stale until you sync.
 CI (`.github/workflows/ci.yml`) runs lint, typecheck, test, and build via turbo.
+Registry builds validate a fresh output directory before replacing `public/r`,
+so removed items cannot remain as stale JSON. CI uploads the validated registry
+artifact for review. Dependency and coverage exceptions are documented in
+`packages/registry/scripts/policy.mjs`.
 
 Tests: `packages/registry/tests/<item>.test.tsx`, run from `apps/storybook`
 (`pnpm exec vitest run <item>` for one file). Tests import via the same
@@ -118,7 +130,7 @@ Mock `@pipecat-ai/client-react` hooks with `vi.hoisted` + `vi.mock` (spread
 Consumers register the namespace in `components.json`:
 
 ```json
-{ "registries": { "@pipecat": "https://voiceuikit.pipecat.ai/r/{name}.json" } }
+{ "registries": { "@pipecat": "https://ui.pipecat.ai/r/{name}.json" } }
 ```
 
 then `npx shadcn add @pipecat/<item>`. Files land in `components/pipecat/`,

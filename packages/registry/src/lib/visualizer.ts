@@ -1,18 +1,4 @@
-/**
- * Lifecycle states shared by every kit visualizer.
- *
- * - "connecting" — session is being established; visualizers animate a
- *   rolling opacity across their elements
- * - "silent"    — idle; static resting rendering
- * - "speaking"  — live audio; elements react to the track
- * - "thinking"  — the bot is working on a response; synthetic wave
- *   animation, the track is ignored
- *
- * Silent and speaking are derived from the track automatically;
- * connecting and thinking are opted into via the isConnecting /
- * isThinking override props. The resolved state is exposed on each
- * visualizer's root element as data-state.
- */
+/** Track-derived silent/speaking states; connecting/thinking are explicit overrides. */
 export type VisualizerState = "connecting" | "silent" | "speaking" | "thinking";
 
 /** One mel-spaced analyser band: its FFT bin range plus tilt boost. */
@@ -23,12 +9,7 @@ export interface VisualizerBand {
   tiltBoost: number;
 }
 
-/**
- * Audio pipeline for a visualizer: an AnalyserNode fed by the track.
- * fftSize 1024 with light time smoothing — it only tames FFT jitter, the
- * visual chase speed is each component's job (barSpeed). Call dispose to
- * release the AudioContext.
- */
+/** Call dispose to release the AudioContext; smoothing here only reduces FFT jitter. */
 export function createVisualizerAnalyser(track: MediaStreamTrack): {
   analyser: AnalyserNode;
   dispose: () => void;
@@ -42,19 +23,7 @@ export function createVisualizerAnalyser(track: MediaStreamTrack): {
   return { analyser, dispose: () => void audioContext.close() };
 }
 
-/**
- * Splits the analyser spectrum into mel-scale bands over the human voice
- * range. 200 Hz skips room rumble and the always-on fundamental; 8 kHz is
- * the top of sibilance. Even mel steps hand most bands to the formant
- * region, where speech actually moves.
- * https://en.wikipedia.org/wiki/Mel_scale
- *
- * getByteFrequencyData maps the analyser's 70 dB window onto 0–255
- * (~3.6 bytes/dB), and voiced speech rolls off roughly 6 dB per octave
- * above the first formant — so each band carries a compensating dB boost
- * relative to the lowest one. Without it the low bands dominate every
- * frame; slightly under 6 so sibilants don't overshoot.
- */
+/** Mel bands cover 200 Hz–8 kHz. A per-octave boost compensates speech rolloff so low bands do not dominate. */
 export function createVoiceBands(
   bandCount: number,
   sampleRate: number,

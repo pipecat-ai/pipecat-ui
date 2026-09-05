@@ -162,24 +162,7 @@ export interface ConnectButtonViewProps extends Omit<
   stateProps?: ConnectButtonStateMap;
 }
 
-/**
- * One button for the whole session lifecycle: renders the connect/disconnect
- * control for a given transport state. Fully props-driven — pair with the
- * connected ConnectButton for Pipecat wiring, or drive it from your own state.
- *
- * Each state resolves derivatively: per-state override → top-level prop →
- * built-in default. Defaults label every state, spin and disable the
- * transitional ones, fill the idle states with the active token, and tint
- * connected states with the inactive token. The current state is exposed as
- * data-state for CSS-side styling; a min-width keeps the footprint stable
- * as labels change. When a state renders without a visible label, supply an
- * aria-label.
- *
- * Icon sizes (size="icon", "icon-sm", …) render icon-only: labels are
- * dropped (the label text becomes the aria-label), the min-width is
- * removed, and states without an icon fall back to a per-state glyph —
- * phone to connect, phone-off to disconnect, retry arrow on error.
- */
+/** State overrides take precedence over component props, then defaults. Icon-only buttons use the label as their accessible name. */
 export function ConnectButtonView({
   transportState = "disconnected",
   onConnect,
@@ -257,16 +240,7 @@ export function ConnectButtonView({
 
 export type ConnectButtonProps = Omit<ConnectButtonViewProps, "transportState">;
 
-/**
- * Connect/disconnect button wired to the Pipecat client: reads the transport
- * state from context and adapts its label, style, and action per state.
- *
- * Without onConnect/onDisconnect it falls back to client.connect() and
- * client.disconnect() — enough for transports configured with their
- * connection params up front. Pass onConnect when your app owns session
- * startup (auth endpoints, startBotAndConnect, …). Must be rendered inside
- * a PipecatClientProvider.
- */
+/** Requires PipecatClientProvider. Pass onConnect when your app owns bot startup. */
 export function ConnectButton({
   onConnect,
   onDisconnect,

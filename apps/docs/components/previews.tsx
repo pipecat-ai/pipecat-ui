@@ -70,6 +70,8 @@ import type {
 } from "@/hooks/use-pipecat-metrics";
 import { Button } from "@/components/ui/button";
 
+import { registerTransport } from "@/lib/transports";
+
 import { PipecatSandbox } from "./pipecat-sandbox";
 import {
   BooleanControl,
@@ -79,6 +81,13 @@ import {
   SelectControl,
   TextControl,
 } from "./preview-controls";
+
+// Local console preview: the host owns its one optional transport import.
+registerTransport("smallwebrtc", async () => {
+  const { SmallWebRTCTransport } =
+    await import("@pipecat-ai/small-webrtc-transport");
+  return SmallWebRTCTransport;
+});
 
 function mockDevice(
   kind: MediaDeviceKind,
@@ -1184,20 +1193,44 @@ export function AudioVisualizerWavePreview() {
   const demoTrack = useSpeechDemoTrack(vizState === "speaking");
   const [size, setSize] = useState(224);
   const [colorShift, setColorShift] = useState(0.05);
+  const [hueSpread, setHueSpread] = useState(0.18);
   const [speed, setSpeed] = useState(1);
   const [amplitude, setAmplitude] = useState(1);
   const [glow, setGlow] = useState(1);
   const [softness, setSoftness] = useState(0.2);
+  const [fill, setFill] = useState(0.4);
+  const [core, setCore] = useState(0.1);
+  const [hollow, setHollow] = useState(0.3);
+  const [depth, setDepth] = useState(0.22);
+  const [smoothing, setSmoothing] = useState(0.28);
+  const [density, setDensity] = useState(0.55);
+  const [highlight, setHighlight] = useState(0.2);
+  const [noHighlight, setNoHighlight] = useState(false);
+  const [iterations, setIterations] = useState(24);
   const [color, setColor] = useState("");
+  const [accentColor, setAccentColor] = useState("");
+  const [highlightColor, setHighlightColor] = useState("");
 
   const sharedProps = {
     size,
     colorShift,
+    hueSpread,
     speed,
     amplitude,
     glow,
     softness,
+    fill,
+    core,
+    hollow,
+    depth,
+    smoothing,
+    density,
+    highlight,
+    noHighlight,
+    iterations,
     color: color || undefined,
+    accentColor: accentColor || undefined,
+    highlightColor: highlightColor || undefined,
   };
 
   return (
@@ -1224,6 +1257,14 @@ export function AudioVisualizerWavePreview() {
             min={0}
             max={1}
             step={0.05}
+          />
+          <NumberControl
+            label="hueSpread"
+            value={hueSpread}
+            onChange={setHueSpread}
+            min={0}
+            max={0.5}
+            step={0.02}
           />
           <NumberControl
             label="speed"
@@ -1257,11 +1298,92 @@ export function AudioVisualizerWavePreview() {
             max={1}
             step={0.05}
           />
+          <NumberControl
+            label="fill"
+            value={fill}
+            onChange={setFill}
+            min={0}
+            max={1}
+            step={0.05}
+          />
+          <NumberControl
+            label="core"
+            value={core}
+            onChange={setCore}
+            min={0}
+            max={1}
+            step={0.05}
+          />
+          <NumberControl
+            label="hollow"
+            value={hollow}
+            onChange={setHollow}
+            min={0}
+            max={1}
+            step={0.05}
+          />
+          <NumberControl
+            label="depth"
+            value={depth}
+            onChange={setDepth}
+            min={0}
+            max={0.5}
+            step={0.02}
+          />
+          <NumberControl
+            label="smoothing"
+            value={smoothing}
+            onChange={setSmoothing}
+            min={0}
+            max={1}
+            step={0.02}
+          />
+          <NumberControl
+            label="density"
+            value={density}
+            onChange={setDensity}
+            min={0.1}
+            max={1.5}
+            step={0.05}
+          />
+          <NumberControl
+            label="highlight"
+            value={highlight}
+            onChange={setHighlight}
+            min={0}
+            max={1}
+            step={0.05}
+          />
+          <BooleanControl
+            label="noHighlight"
+            checked={noHighlight}
+            onCheckedChange={setNoHighlight}
+          />
+          <NumberControl
+            label="iterations"
+            value={iterations}
+            onChange={setIterations}
+            min={8}
+            max={48}
+            step={4}
+          />
           <ColorControl
             label="color"
             value={color}
             onChange={setColor}
             placeholder="#1FD5F9 or --var"
+          />
+          <ColorControl
+            label="accentColor"
+            value={accentColor}
+            onChange={setAccentColor}
+            placeholder="auto (hueSpread)"
+          />
+          <ColorControl
+            label="highlightColor"
+            value={highlightColor}
+            onChange={setHighlightColor}
+            placeholder="auto (tinted white)"
           />
         </>
       }

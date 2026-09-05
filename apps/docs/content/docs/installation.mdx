@@ -7,7 +7,10 @@ icon: Download
 ## Prerequisites
 
 A [shadcn/ui project](https://ui.shadcn.com/docs/installation) on Tailwind v4. The kit is
-authored for the **Base UI** flavor (`base-*` styles — the default since shadcn CLI 4.x).
+authored and tested against **`base-nova`** (Base UI primitives). Set
+`"style": "base-nova"` when creating your shadcn project. Other styles have not
+been verified; changing only this setting in an existing project does not
+regenerate its installed primitives.
 
 ## 1. Register the namespace
 
@@ -16,7 +19,7 @@ Add the `@pipecat` registry to your `components.json`:
 ```json title="components.json"
 {
   "registries": {
-    "@pipecat": "https://voiceuikit.pipecat.ai/r/{name}.json"
+    "@pipecat": "https://ui.pipecat.ai/r/{name}.json"
   }
 }
 ```
@@ -56,7 +59,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
       }),
   );
 
-  return <PipecatClientProvider client={client}>{children}</PipecatClientProvider>;
+  return (
+    <PipecatClientProvider client={client}>{children}</PipecatClientProvider>
+  );
 }
 ```
 

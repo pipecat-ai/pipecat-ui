@@ -70,12 +70,7 @@ export interface MetricSeriesChartProps {
   className?: string;
 }
 
-/**
- * Time-series line chart shared by the metrics blocks: one linear line with
- * dots per processor (samples are sparse per-turn values — honest marks beat
- * smoothing), colored from the theme's chart palette, on the stock shadcn
- * chart component.
- */
+/** Linear interpolation preserves sparse per-turn samples; colors use the chart palette. */
 export function MetricSeriesChart({
   series,
   scale = 1,

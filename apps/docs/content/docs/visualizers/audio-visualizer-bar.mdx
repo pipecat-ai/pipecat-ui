@@ -3,6 +3,14 @@ title: Audio Visualizer Bar
 description: Canvas audio spectrum visualizer with mel-scale frequency bands.
 ---
 
+<a
+  href="/storybook/?path=/story/components-audiovisualizerbar--idle"
+  target="_blank"
+  rel="noreferrer"
+>
+  Open in Storybook
+</a>
+
 <AudioVisualizerBarPreview />
 
 ## Installation
@@ -29,19 +37,19 @@ it inside a button or set `text-active` on a wrapper to tint it.
 
 ## Key props
 
-| Prop | Type | Description |
-| --- | --- | --- |
-| `participantType` | `"local" \| "bot"` | Whose audio to visualize (connected) |
-| `track` | `MediaStreamTrack \| null` | Audio source (View); idle dots when null |
-| `barCount` / `barWidth` / `barGap` / `barMaxHeight` | `number` | Geometry |
-| `barOrigin` | `"top" \| "bottom" \| "center"` | Where bars grow from |
-| `barSpeed` | `number` | How fast bars chase the spectrum while speaking (0–1 per frame, default 0.5; 1 disables smoothing) |
-| `barColor` | `string` | Any CSS color, `currentColor`, or a `--css-var` name |
-| `noPeaks` + `peak*` | | Falling peak-line behavior |
-| `isConnecting` | `boolean` | Override: rolls opacity across the resting dots (wins over `isThinking`) |
-| `isThinking` | `boolean` | Override: traveling wave while the bot works on a response |
-| `connectingSpeed` | `number` | Opacity-roll speed for the connecting override |
-| `thinkingSpeed` / `thinkingWaveWidth` / `thinkingHeight` / `thinkingAlpha` | `number` | Thinking-wave speed, tightness, height as a fraction of `barMaxHeight` (default 0.25), and trough opacity (default 0.5, crests at 1) |
+| Prop                                                                       | Type                            | Description                                                                                                                          |
+| -------------------------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `participantType`                                                          | `"local" \| "bot"`              | Whose audio to visualize (connected)                                                                                                 |
+| `track`                                                                    | `MediaStreamTrack \| null`      | Audio source (View); idle dots when null                                                                                             |
+| `barCount` / `barWidth` / `barGap` / `barMaxHeight`                        | `number`                        | Geometry                                                                                                                             |
+| `barOrigin`                                                                | `"top" \| "bottom" \| "center"` | Where bars grow from                                                                                                                 |
+| `barSpeed`                                                                 | `number`                        | How fast bars chase the spectrum while speaking (0–1 per frame, default 0.5; 1 disables smoothing)                                   |
+| `barColor`                                                                 | `string`                        | Any CSS color, `currentColor`, or a `--css-var` name                                                                                 |
+| `noPeaks` + `peak*`                                                        |                                 | Falling peak-line behavior                                                                                                           |
+| `isConnecting`                                                             | `boolean`                       | Override: rolls opacity across the resting dots (wins over `isThinking`)                                                             |
+| `isThinking`                                                               | `boolean`                       | Override: traveling wave while the bot works on a response                                                                           |
+| `connectingSpeed`                                                          | `number`                        | Opacity-roll speed for the connecting override                                                                                       |
+| `thinkingSpeed` / `thinkingWaveWidth` / `thinkingHeight` / `thinkingAlpha` | `number`                        | Thinking-wave speed, tightness, height as a fraction of `barMaxHeight` (default 0.25), and trough opacity (default 0.5, crests at 1) |
 
 Bands are tuned for voice: they span 200 Hz–8 kHz on the mel scale, with speech's
 natural high-frequency rolloff compensated so the upper bars compete fairly with the

@@ -194,14 +194,7 @@ export interface UserAudioControlViewProps {
    * connected control wires it to client.enableMic().
    */
   onMicEnabledChange?: (enabled: boolean) => void;
-  /**
-   * KeyboardEvent.code for the global push-to-talk hotkey. The default,
-   * "Backquote" (`), has no native behavior outside text fields, so it
-   * works wherever focus is. Activation keys like "Space" also work but
-   * yield to focused interactive elements. Pass null to disable the
-   * hotkey and hide the shortcut chip; holding the toggle button still
-   * works.
-   */
+  /** Global push-to-talk KeyboardEvent.code (default "Backquote"). Interactive elements retain their activation keys; null disables the hotkey. */
   pttKey?: string | null;
   /**
    * Text around the hotkey chip; "[key]" marks where the chip renders
@@ -215,12 +208,7 @@ export interface UserAudioControlViewProps {
    * can't thrash the WebRTC track (default 200).
    */
   debounceMs?: number;
-  /**
-   * Pulse a thick active-colored outline around the toggle while
-   * push-to-talk holds the mic open (default true). A CSS outline, so it
-   * never collides with the focus ring or affects layout; the pulse rests
-   * under prefers-reduced-motion.
-   */
+  /** Pulse the push-to-talk outline (default true); respects reduced motion. */
   pttActiveOutline?: boolean;
   /**
    * Called when push-to-talk engages the mic (e.g. to play an on-air
@@ -246,25 +234,7 @@ export interface UserAudioControlViewProps {
   children?: React.ReactNode;
 }
 
-/**
- * Microphone control view: a mute toggle with a state-colored audio
- * visualizer, plus a mic/speaker picker in a split-button dropdown.
- * Fully props-driven — pair with the connected UserAudioControl for
- * Pipecat wiring, or drive it from your own state.
- *
- * Two interaction modes: "toggle" (click to mute/unmute) and
- * "push-to-talk" (hold the button — or the pttKey hotkey — to unmute,
- * release to re-mute after a debounced quiet period). Push-to-talk
- * renders the hotkey as a Kbd chip, and the device dropdown offers a
- * runtime mode switch when onModeChange is wired.
- *
- * States, in precedence order: isLoading → unavailableText → interactive.
- * A min-width on the toggle keeps the footprint stable across them.
- * The toggle exposes aria-pressed, and falls back to an aria-label when
- * no visible label is rendered. Icon sizes (size="icon", "icon-sm", …)
- * render the toggle icon-only — square, with all text and the visualizer
- * hidden — while push-to-talk holds keep working.
- */
+/** Toggle or hold-to-talk microphone control. Loading takes precedence over unavailability. */
 export function UserAudioControlView({
   isMicEnabled = false,
   onToggleMic,
@@ -718,22 +688,7 @@ export interface UserAudioControlProps extends Omit<
   defaultMode?: "toggle" | "push-to-talk";
 }
 
-/**
- * Microphone control wired to the Pipecat client. Automatically manages:
- *
- * - mute state via PipecatClientMicToggle, and absolute mic state via
- *   client.enableMic() for push-to-talk
- * - mic/speaker lists and selection via the client's media devices
- * - the visualizer's local audio track
- * - loading (device initialization) and per-device error states via
- *   useMediaState, so the control stays accurate across
- *   connect/disconnect cycles
- * - the interaction mode: uncontrolled via defaultMode (flippable at
- *   runtime from the device dropdown), or controlled via mode +
- *   onModeChange
- *
- * Must be rendered inside a PipecatClientProvider.
- */
+/** Requires PipecatClientProvider. Manages device state, selection, and toggle or push-to-talk interaction. */
 export function UserAudioControl({
   unavailableText,
   mode: controlledMode,

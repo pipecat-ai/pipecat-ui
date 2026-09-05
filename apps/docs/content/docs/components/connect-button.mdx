@@ -3,6 +3,14 @@ title: Connect Button
 description: One button for the whole session lifecycle, driven by the Pipecat transport state.
 ---
 
+<a
+  href="/storybook/?path=/story/components-connectbutton--default"
+  target="_blank"
+  rel="noreferrer"
+>
+  Open in Storybook
+</a>
+
 <ConnectButtonPreview />
 
 ## Installation
@@ -44,23 +52,23 @@ default variant.
 
 ## Key props
 
-| Prop | Type | Description |
-| --- | --- | --- |
-| `stateProps` | `ConnectButtonStateMap` | Sparse per-`TransportState` overrides: `children`, `icon`, `variant`, `className`, `disabled`, `onClick` |
-| `onConnect` / `onDisconnect` | `() => void` | Replace the default `client.connect()` / `client.disconnect()` actions |
-| `children` | `ReactNode` | Label for every state (individual states can still override) |
-| `variant` / `size` | Button props | Passed to the underlying shadcn Button; `variant` applies to all states. Icon sizes (`icon`, `icon-sm`, …) render icon-only with per-state default glyphs |
+| Prop                         | Type                    | Description                                                                                                                                               |
+| ---------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `stateProps`                 | `ConnectButtonStateMap` | Sparse per-`TransportState` overrides: `children`, `icon`, `variant`, `className`, `disabled`, `onClick`                                                  |
+| `onConnect` / `onDisconnect` | `() => void`            | Replace the default `client.connect()` / `client.disconnect()` actions                                                                                    |
+| `children`                   | `ReactNode`             | Label for every state (individual states can still override)                                                                                              |
+| `variant` / `size`           | Button props            | Passed to the underlying shadcn Button; `variant` applies to all states. Icon sizes (`icon`, `icon-sm`, …) render icon-only with per-state default glyphs |
 
 ## States
 
-| `data-state` | Default |
-| --- | --- |
-| `disconnected`, `initialized` | **Connect** in the `active` token fill; click connects |
-| `initializing` | **Initializing…** with spinner, disabled |
-| `authenticating`, `authenticated`, `connecting` | **Connecting…** with spinner, disabled |
-| `connected`, `ready` | **Disconnect** in the `inactive` token tint; click disconnects |
-| `disconnecting` | **Disconnecting…** with spinner, disabled |
-| `error` | **Retry** as destructive; click connects again |
+| `data-state`                                    | Default                                                        |
+| ----------------------------------------------- | -------------------------------------------------------------- |
+| `disconnected`, `initialized`                   | **Connect** in the `active` token fill; click connects         |
+| `initializing`                                  | **Initializing…** with spinner, disabled                       |
+| `authenticating`, `authenticated`, `connecting` | **Connecting…** with spinner, disabled                         |
+| `connected`, `ready`                            | **Disconnect** in the `inactive` token tint; click disconnects |
+| `disconnecting`                                 | **Disconnecting…** with spinner, disabled                      |
+| `error`                                         | **Retry** as destructive; click connects again                 |
 
 The raw transport state is always exposed as `data-state`, so states can also
 be styled from CSS (`data-[state=ready]:…`). Use `ConnectButtonView` with a

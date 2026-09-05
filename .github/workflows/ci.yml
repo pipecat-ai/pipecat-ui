@@ -2,12 +2,20 @@ name: CI
 
 on:
   push:
-    branches: [main, v1]
+    branches: [main]
   pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   ci:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -21,6 +29,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Validate registry manifest and source coverage
+        run: pnpm registry:check
+
       - name: Lint
         run: pnpm lint
 
@@ -33,5 +44,15 @@ jobs:
       - name: Test
         run: pnpm test
 
-      - name: Build (registry + storybook)
+      - name: Build registry and apps
         run: pnpm build
+
+      - name: Verify a clean consumer installation
+        run: pnpm registry:install-test all
+
+      - name: Upload validated registry for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipecat-registry
+          path: packages/registry/public/r/
+          if-no-files-found: error

@@ -3,6 +3,14 @@ title: Session Info
 description: Session metadata rows — transport type, copyable ids, RTVI versions.
 ---
 
+<a
+  href="/storybook/?path=/story/components-sessioninfo--populated"
+  target="_blank"
+  rel="noreferrer"
+>
+  Open in Storybook
+</a>
+
 <SessionInfoPreview />
 
 ## Installation
@@ -23,9 +31,9 @@ ids are whatever you pass in, rendered with copy-to-clipboard buttons. Requires 
 
 ## Key props
 
-| Prop | Type | Description |
-| --- | --- | --- |
-| `sessionId` / `participantId` | `string` | Copyable id rows |
-| `noTransportType` / `noSessionId` / `noParticipantId` / `noRTVIVersion` | `boolean` | Hide rows |
+| Prop                                                                    | Type      | Description      |
+| ----------------------------------------------------------------------- | --------- | ---------------- |
+| `sessionId` / `participantId`                                           | `string`  | Copyable id rows |
+| `noTransportType` / `noSessionId` / `noParticipantId` / `noRTVIVersion` | `boolean` | Hide rows        |
 
 `CopyText` is exported standalone — truncated text with a copy button.
