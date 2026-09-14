@@ -12,17 +12,11 @@ authored and tested against **`base-nova`** (Base UI primitives). Set
 been verified; changing only this setting in an existing project does not
 regenerate its installed primitives.
 
-## 1. Register the namespace
+## 1. Add the registry
 
-Add the `@pipecat` registry to your `components.json`:
+Register `@pipecat` with the shadcn CLI:
 
-```json title="components.json"
-{
-  "registries": {
-    "@pipecat": "https://ui.pipecat.ai/r/{name}.json"
-  }
-}
-```
+<CommandTabs command="npx shadcn@latest registry add @pipecat" />
 
 Every item is served as static JSON from this site — for example
 [/r/connect-button.json](/r/connect-button.json).
