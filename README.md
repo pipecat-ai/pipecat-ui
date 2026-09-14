@@ -55,14 +55,10 @@ Pipecat client, and a props-driven `*View` export for custom state management.
 
 ## Installation
 
-1. Register the `@pipecat` namespace in your `components.json`:
+1. Add the `@pipecat` registry:
 
-```jsonc
-{
-  "registries": {
-    "@pipecat": "https://ui.pipecat.ai/r/{name}.json",
-  },
-}
+```bash
+npx shadcn@latest registry add @pipecat
 ```
 
 2. Add components:
