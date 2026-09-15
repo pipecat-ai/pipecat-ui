@@ -8,8 +8,7 @@ per-component releases, generated source stamps, or a separate registry deploy.
 
 - Use pnpm, the version in `packageManager`, and the Node version in `.nvmrc`.
 - `packages/registry/src` is the source consumers install. `registry.json` declares
-  its files, direct dependencies, shadcn primitives and CSS. Console is a local
-  preview only. Do not add it back to the registry without a product decision.
+  its files, direct dependencies, shadcn primitives and CSS.
 - `apps/docs` builds and serves both documentation and `/r/{name}.json` at
   `ui.pipecat.ai`. Generated payloads are ignored. Edit source and the manifest.
 - `apps/storybook` hosts component development and Vitest, and deploys as a

@@ -8,12 +8,10 @@ import { StubTransport } from "./helpers/stub-transport";
 
 const transports = vi.hoisted(() => ({
   createTransport: vi.fn(),
-  loadTransport: vi.fn(),
 }));
 
 vi.mock("@/lib/transports", () => ({
   createTransport: transports.createTransport,
-  loadTransport: transports.loadTransport,
 }));
 
 function setViewportWidth(width: number) {
@@ -34,7 +32,6 @@ beforeEach(() => {
   transports.createTransport.mockImplementation(
     async () => new StubTransport(),
   );
-  transports.loadTransport.mockResolvedValue(StubTransport);
   // The real connect awaits a bot-ready handshake that never comes in jsdom.
   vi.spyOn(PipecatClient.prototype, "connect").mockResolvedValue(
     undefined as never,
@@ -152,14 +149,31 @@ describe("Console", () => {
     ).toHaveLength(0);
   });
 
-  it("mounts the codec setter only for smallwebrtc", async () => {
-    await renderConsole(<Console audioCodec="opus" />);
-    await waitFor(() =>
-      expect(transports.loadTransport).toHaveBeenCalledWith("smallwebrtc"),
+  it("builds from transportFactory without a registered loader and applies codecs only for smallwebrtc", async () => {
+    const codecTransport = () =>
+      Object.assign(new StubTransport(), {
+        setAudioCodec: vi.fn(),
+        setVideoCodec: vi.fn(),
+      });
+    const webrtc = codecTransport();
+    const factory = vi.fn(() => webrtc);
+    const { unmount } = await renderConsole(
+      <Console
+        transportFactory={factory}
+        transportOptions={{ waitForICEGathering: true }}
+        audioCodec="opus"
+      />,
     );
+    expect(factory).toHaveBeenCalledWith({ waitForICEGathering: true });
+    expect(transports.createTransport).not.toHaveBeenCalled();
+    expect(webrtc.setAudioCodec).toHaveBeenCalledWith("opus");
+    expect(webrtc.setVideoCodec).toHaveBeenCalledWith("default");
+    unmount();
 
-    transports.loadTransport.mockClear();
-    await renderConsole(<Console transportType="websocket" />);
-    expect(transports.loadTransport).not.toHaveBeenCalled();
+    const websocket = codecTransport();
+    await renderConsole(
+      <Console transportType="websocket" transportFactory={() => websocket} />,
+    );
+    expect(websocket.setAudioCodec).not.toHaveBeenCalled();
   });
 });

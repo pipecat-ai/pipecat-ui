@@ -68,7 +68,11 @@ import {
   usePipecatApp,
   type UsePipecatAppReturn,
 } from "@/hooks/use-pipecat-app";
-import type { TransportOptions, TransportType } from "@/lib/transports";
+import type {
+  TransportFactory,
+  TransportOptions,
+  TransportType,
+} from "@/lib/transports";
 import { cn } from "@/lib/utils";
 
 // Connection-URL helpers: resolve the URL the connect button will hit, for
@@ -116,8 +120,10 @@ const MEMORY_STORAGE: LayoutStorage = {
 
 export interface ConsoleProps {
   // -- Bootstrap (forwarded to usePipecatApp) --------------------------------
-  /** Transport backing the client (default "smallwebrtc"). Install the matching @pipecat-ai/*-transport package. */
+  /** Transport backing the client (default "smallwebrtc"). Match it to transportFactory; codec and ICE handling depend on it. */
   transportType?: TransportType;
+  /** Creates your installed transport. Read once; remount to change. Without it, the loader registered for transportType is used. */
+  transportFactory?: TransportFactory;
   /** Constructor options for the selected transport. */
   transportOptions?: TransportOptions;
   /** Overrides merged into the PipecatClient constructor. */
@@ -217,13 +223,14 @@ export interface ConsoleProps {
  * single-tree mobile layout using bottom tabs.
  *
  * The console builds its own client via usePipecatApp and renders its own
- * PipecatClientProvider — do not nest it inside another provider. Install
- * the transport package for your `transportType` (a missing one surfaces in
- * the error banner with the install command).
+ * PipecatClientProvider — do not nest it inside another provider. Supply
+ * the transport with `transportFactory` or `registerTransport`; load
+ * failures surface in the error banner.
  */
 export function Console(props: ConsoleProps) {
   const {
     transportType = "smallwebrtc",
+    transportFactory,
     transportOptions,
     clientOptions,
     connectParams,
@@ -237,6 +244,7 @@ export function Console(props: ConsoleProps) {
 
   const app = usePipecatApp({
     transportType,
+    transportFactory,
     transportOptions,
     clientOptions,
     connectParams,

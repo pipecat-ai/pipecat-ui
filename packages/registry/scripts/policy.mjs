@@ -10,16 +10,13 @@ export const styleDependencies = {
 };
 
 export const unpublishedSources = {
-  "src/blocks/console/":
-    "Console is a local development preview, withheld from the registry.",
   "src/fixtures/": "Storybook fixtures are development-only.",
 };
 
 export const storyExceptions = {
-  "use-pipecat-app":
-    "Exercised by the local console preview and dedicated hook tests.",
+  "use-pipecat-app": "Exercised by the console block and dedicated hook tests.",
   "use-pipecat-metrics":
     "Exercised by metrics stories and dedicated hook tests.",
   "use-pipecat-event-stream":
-    "Exercised by the local console preview and dedicated hook tests.",
+    "Exercised by the console block and dedicated hook tests.",
 };

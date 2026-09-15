@@ -77,6 +77,7 @@ const KIT_DOC_ROUTES: Record<string, string> = {
   "use-pipecat-metrics": "/docs/hooks/use-pipecat-metrics",
   "use-pipecat-event-stream": "/docs/hooks/use-pipecat-event-stream",
   metrics: "/docs/blocks/metrics",
+  console: "/docs/blocks/console",
 };
 
 const PACKAGE_MANAGERS = ["pnpm", "npm", "yarn", "bun"] as const;
