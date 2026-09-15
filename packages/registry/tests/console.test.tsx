@@ -201,6 +201,41 @@ describe("Console", () => {
     ).toBeInTheDocument();
   });
 
+  it("shows the camera preview tile only while the camera is on", async () => {
+    let client: PipecatClient | undefined;
+    await renderConsole(
+      <Console
+        onClient={(created) => {
+          client = created;
+        }}
+      />,
+    );
+    expect(
+      document.querySelector("[data-slot=user-video-control]"),
+    ).not.toBeNull();
+    expect(document.querySelector("[data-slot=user-video-tile]")).toBeNull();
+
+    vi.spyOn(PipecatClient.prototype, "isCamEnabled", "get").mockReturnValue(
+      true,
+    );
+    act(() => {
+      client!.emit(
+        RTVIEvent.TrackStarted,
+        { kind: "video" } as MediaStreamTrack,
+        {
+          id: "local",
+          name: "local",
+          local: true,
+        },
+      );
+    });
+    await waitFor(() =>
+      expect(
+        document.querySelector("[data-slot=user-video-tile]"),
+      ).not.toBeNull(),
+    );
+  });
+
   it("keeps capturing events while the mobile events tab is closed", async () => {
     setViewportWidth(500);
     let client: PipecatClient | undefined;
