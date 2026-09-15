@@ -80,14 +80,14 @@ describe("Console", () => {
     expect(document.querySelector("[data-slot=spinner]")).toBeNull();
   });
 
-  it("hides bot video by default and renders bot audio", async () => {
+  it("renders bot audio and bot video by default", async () => {
     await renderConsole(<Console />);
     expect(
       document.querySelector("[data-slot=console-bot-audio-panel]"),
     ).not.toBeNull();
     expect(
       document.querySelector("[data-slot=console-bot-video-panel]"),
-    ).toBeNull();
+    ).not.toBeNull();
   });
 
   it("removes regions per no* props and drops the collapse toggle without an info panel", async () => {
