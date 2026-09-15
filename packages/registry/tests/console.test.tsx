@@ -1,4 +1,4 @@
-import { PipecatClient } from "@pipecat-ai/client-js";
+import { PipecatClient, RTVIEvent } from "@pipecat-ai/client-js";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -175,5 +175,44 @@ describe("Console", () => {
       <Console transportType="websocket" transportFactory={() => websocket} />,
     );
     expect(websocket.setAudioCodec).not.toHaveBeenCalled();
+  });
+
+  it("keeps collecting metrics while the metrics tab is closed", async () => {
+    let client: PipecatClient | undefined;
+    const user = userEvent.setup();
+    await renderConsole(
+      <Console
+        onClient={(created) => {
+          client = created;
+        }}
+      />,
+    );
+    act(() => {
+      client!.emit(RTVIEvent.Metrics, {
+        ttfb: [{ processor: "CartesiaTTSService#0", value: 0.1 }],
+      });
+    });
+    await user.click(screen.getByRole("tab", { name: "Metrics" }));
+    expect(
+      await screen.findByText("TTFB · CartesiaTTSService#0"),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps capturing events while the mobile events tab is closed", async () => {
+    setViewportWidth(500);
+    let client: PipecatClient | undefined;
+    const user = userEvent.setup();
+    await renderConsole(
+      <Console
+        onClient={(created) => {
+          client = created;
+        }}
+      />,
+    );
+    act(() => {
+      client!.emit(RTVIEvent.ServerMessage, { hello: "world" });
+    });
+    await user.click(screen.getByRole("tab", { name: "Events" }));
+    expect(await screen.findByText("serverMessage")).toBeInTheDocument();
   });
 });

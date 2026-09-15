@@ -606,6 +606,7 @@
         "@pipecat/text-input",
         "@pipecat/use-pipecat-app",
         "@pipecat/use-pipecat-event-stream",
+        "@pipecat/use-pipecat-metrics",
         "@pipecat/user-audio-control",
         "@pipecat/user-screen-control",
         "@pipecat/user-video-control"
