@@ -139,11 +139,14 @@ describe("Console", () => {
     setViewportWidth(500);
     await renderConsole(<Console />);
     expect(screen.getAllByRole("tab").length).toBeGreaterThanOrEqual(3);
-    // Default tab (bot media) is mounted exactly once; inactive tabs are
-    // unmounted entirely — the opposite of the old CSS-hidden double tree.
+    // Conversation opens by default and is mounted once; other inactive tabs
+    // are unmounted entirely.
+    expect(
+      document.querySelectorAll("[data-slot=console-conversation-panel]"),
+    ).toHaveLength(1);
     expect(
       document.querySelectorAll("[data-slot=console-bot-audio-panel]"),
-    ).toHaveLength(1);
+    ).toHaveLength(0);
     expect(
       document.querySelectorAll("[data-slot=console-events-panel]"),
     ).toHaveLength(0);
