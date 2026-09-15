@@ -14,14 +14,8 @@ import {
 const manifest = () =>
   JSON.parse(fs.readFileSync(path.join(registryRoot, "registry.json"), "utf8"));
 
-test("the shipped registry passes validation and excludes console", () => {
-  const registry = validateRegistry();
-  assert(!registry.items.some((item) => item.name === "console"));
-  assert(
-    !registry.items.some((item) =>
-      item.files.some((file) => file.path.startsWith("src/blocks/console/")),
-    ),
-  );
+test("the shipped registry passes validation", () => {
+  validateRegistry();
 });
 
 test("dependency parsing rejects floating majors and bare names", () => {
@@ -139,12 +133,12 @@ test("artifact validation preserves deprecation metadata and rejects stale outpu
       );
     }
     validateArtifacts(output, registry);
-    fs.writeFileSync(path.join(output, "console.json"), "{}");
+    fs.writeFileSync(path.join(output, "removed-item.json"), "{}");
     assert.throws(
       () => validateArtifacts(output, registry),
       /missing or stale items/,
     );
-    fs.unlinkSync(path.join(output, "console.json"));
+    fs.unlinkSync(path.join(output, "removed-item.json"));
     const file = path.join(output, `${registry.items[0].name}.json`);
     const built = JSON.parse(fs.readFileSync(file, "utf8"));
     built.files[0].content = "wrong content";

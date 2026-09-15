@@ -68,7 +68,13 @@ import {
   usePipecatApp,
   type UsePipecatAppReturn,
 } from "@/hooks/use-pipecat-app";
-import type { TransportOptions, TransportType } from "@/lib/transports";
+import { usePipecatEventStream } from "@/hooks/use-pipecat-event-stream";
+import { usePipecatMetricValue } from "@/hooks/use-pipecat-metrics";
+import type {
+  TransportFactory,
+  TransportOptions,
+  TransportType,
+} from "@/lib/transports";
 import { cn } from "@/lib/utils";
 
 // Connection-URL helpers: resolve the URL the connect button will hit, for
@@ -108,6 +114,18 @@ function getConnectionUrl(
   return candidate ? resolveUrl(candidate) : undefined;
 }
 
+// The metrics tab and the mobile events tab unmount while inactive. These keep
+// their shared stores collecting, so opening either shows the whole session.
+function MetricsCollector() {
+  usePipecatMetricValue("ttfb");
+  return null;
+}
+
+function EventStreamCollector() {
+  usePipecatEventStream();
+  return null;
+}
+
 /** Inert storage handed to useDefaultLayout when persistence is off. */
 const MEMORY_STORAGE: LayoutStorage = {
   getItem: () => null,
@@ -116,8 +134,10 @@ const MEMORY_STORAGE: LayoutStorage = {
 
 export interface ConsoleProps {
   // -- Bootstrap (forwarded to usePipecatApp) --------------------------------
-  /** Transport backing the client (default "smallwebrtc"). Install the matching @pipecat-ai/*-transport package. */
+  /** Transport backing the client (default "smallwebrtc"). Match it to transportFactory; codec and ICE handling depend on it. */
   transportType?: TransportType;
+  /** Creates your installed transport. Read once; remount to change. Without it, the loader registered for transportType is used. */
+  transportFactory?: TransportFactory;
   /** Constructor options for the selected transport. */
   transportOptions?: TransportOptions;
   /** Overrides merged into the PipecatClient constructor. */
@@ -164,7 +184,7 @@ export interface ConsoleProps {
   noBotAudio?: boolean;
   /** Hides the volume control in the bot audio pane header. */
   noBotAudioControls?: boolean;
-  /** Hides the bot video pane. Default TRUE — most voice bots have no video. */
+  /** Hides the bot video pane. Default false. */
   noBotVideo?: boolean;
   noConversation?: boolean;
   noMetrics?: boolean;
@@ -217,13 +237,14 @@ export interface ConsoleProps {
  * single-tree mobile layout using bottom tabs.
  *
  * The console builds its own client via usePipecatApp and renders its own
- * PipecatClientProvider — do not nest it inside another provider. Install
- * the transport package for your `transportType` (a missing one surfaces in
- * the error banner with the install command).
+ * PipecatClientProvider — do not nest it inside another provider. Supply
+ * the transport with `transportFactory` or `registerTransport`; load
+ * failures surface in the error banner.
  */
 export function Console(props: ConsoleProps) {
   const {
     transportType = "smallwebrtc",
+    transportFactory,
     transportOptions,
     clientOptions,
     connectParams,
@@ -237,6 +258,7 @@ export function Console(props: ConsoleProps) {
 
   const app = usePipecatApp({
     transportType,
+    transportFactory,
     transportOptions,
     clientOptions,
     connectParams,
@@ -275,6 +297,8 @@ export function Console(props: ConsoleProps) {
         <ConsoleShell {...props} app={app} />
       </TooltipProvider>
       {!props.noAudioOutput && <BotAudioOutput />}
+      {!props.noMetrics && <MetricsCollector />}
+      {!props.noEvents && <EventStreamCollector />}
       {transportType === "smallwebrtc" && (
         <SmallWebRTCCodecSetter
           audioCodec={props.audioCodec}
@@ -302,7 +326,7 @@ function ConsoleShell({
   noAudioOutput = false,
   noBotAudio = false,
   noBotAudioControls = false,
-  noBotVideo = true,
+  noBotVideo = false,
   noConversation = false,
   noMetrics = false,
   noEvents = false,
@@ -321,7 +345,8 @@ function ConsoleShell({
   onInjectMessage,
   className,
 }: ConsoleProps & { app: UsePipecatAppReturn }) {
-  const isDesktop = useMinWidth(640);
+  // Three resizable columns need about 1024px; narrower screens get tabs.
+  const isDesktop = useMinWidth(1024);
 
   // -- Session facts collected from RTVI events ------------------------------
   const [participantId, setParticipantId] = React.useState<string>();
@@ -494,26 +519,29 @@ function ConsoleShell({
     >
       <header
         data-slot="console-header"
-        className="grid grid-cols-[1fr_auto] items-center gap-2 border-b px-3 py-2 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]"
+        className="flex items-center gap-2 border-b px-3 py-2"
       >
-        <div className="flex items-center">
+        <div className="flex shrink-0 items-center">
           {noLogo ? (
             <span className="h-6" />
           ) : (
             (logo ?? <PipecatLogo height={20} />)
           )}
         </div>
-        <strong className="hidden truncate text-sm sm:block">
+        <strong className="hidden min-w-0 truncate text-sm md:block">
           {titleText}
         </strong>
-        <div className="flex items-center justify-end gap-1">
-          {headerSlot}
+        <div className="ml-auto flex min-w-0 items-center justify-end gap-1">
+          {/* Slot content may shrink; the console's own controls never do. */}
+          {headerSlot && (
+            <div className="flex min-w-0 items-center gap-1">{headerSlot}</div>
+          )}
           {!noDTMF && <ConsoleKeypadToggle mode={keypadMode} />}
           {!noInfoPanel && (
             <Button
               variant="ghost"
               size="icon-sm"
-              className="hidden sm:inline-flex"
+              className="hidden lg:inline-flex"
               aria-label={
                 isInfoCollapsed ? "Expand info panel" : "Collapse info panel"
               }
@@ -567,6 +595,7 @@ function ConsoleShell({
             orientation="vertical"
             defaultLayout={verticalLayout.defaultLayout}
             onLayoutChanged={verticalLayout.onLayoutChanged}
+            className="gap-2"
           >
             <ResizablePanel id="main" defaultSize="70%" minSize="50%">
               <ResizablePanelGroup
@@ -590,7 +619,10 @@ function ConsoleShell({
                       )
                     }
                   >
-                    {mediaStack(isMediaCollapsed)}
+                    {/* p-px keeps each card's ring inside the panel's scroll box, which clips it. */}
+                    <div className="h-full p-px">
+                      {mediaStack(isMediaCollapsed)}
+                    </div>
                   </ResizablePanel>
                 )}
                 {!noBotArea && (!noConversationPanel || !noInfoPanel) && (
@@ -602,7 +634,7 @@ function ConsoleShell({
                     defaultSize={`${conversationDefaultSize}%`}
                     minSize="30%"
                   >
-                    {conversationPanel}
+                    <div className="h-full p-px">{conversationPanel}</div>
                   </ResizablePanel>
                 )}
                 {!noConversationPanel && !noInfoPanel && (
@@ -622,7 +654,9 @@ function ConsoleShell({
                       )
                     }
                   >
-                    {infoPanel(isInfoCollapsed)}
+                    <div className="h-full p-px">
+                      {infoPanel(isInfoCollapsed)}
+                    </div>
                   </ResizablePanel>
                 )}
               </ResizablePanelGroup>
@@ -642,20 +676,22 @@ function ConsoleShell({
                   )
                 }
               >
-                {eventsPanel(isEventsCollapsed)}
+                <div className="h-full p-px">
+                  {eventsPanel(isEventsCollapsed)}
+                </div>
               </ResizablePanel>
             )}
           </ResizablePanelGroup>
         ) : (
           <Tabs
             defaultValue={
-              noBotArea
-                ? noConversationPanel
-                  ? noInfoPanel
-                    ? "events"
-                    : "info"
-                  : "conversation"
-                : "bot"
+              !noConversationPanel
+                ? "conversation"
+                : !noBotArea
+                  ? "bot"
+                  : !noInfoPanel
+                    ? "info"
+                    : "events"
             }
             className="flex h-full min-h-0 flex-col"
           >
@@ -684,14 +720,14 @@ function ConsoleShell({
               </TabsContent>
             )}
             <TabsList className="mt-2 w-full">
-              {!noBotArea && (
-                <TabsTrigger value="bot" aria-label="Bot media">
-                  <BotIcon />
-                </TabsTrigger>
-              )}
               {!noConversationPanel && (
                 <TabsTrigger value="conversation" aria-label="Conversation">
                   <MessagesSquareIcon />
+                </TabsTrigger>
+              )}
+              {!noBotArea && (
+                <TabsTrigger value="bot" aria-label="Bot media">
+                  <BotIcon />
                 </TabsTrigger>
               )}
               {!noInfoPanel && (

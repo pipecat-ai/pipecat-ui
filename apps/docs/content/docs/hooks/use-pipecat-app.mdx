@@ -44,6 +44,7 @@ so your app only ships the one it uses. Install the package for your
 | `daily`                 | `npm install @pipecat-ai/daily-transport`        |
 | `websocket`             | `npm install @pipecat-ai/websocket-transport`    |
 | `moq`                   | `npm install @pipecat-ai/moq-transport`          |
+| `livekit`               | `npm install @pipecat-ai/livekit-transport`      |
 
 Import the installed transport in your app and pass `transportFactory`. The
 registry helper does not reference optional packages, so Vite and Next.js do
@@ -121,18 +122,18 @@ remount the calling component with a React `key`.
 
 ## Key options
 
-| Option                        | Type                                               | Description                                                                                       |
-| ----------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `transportType`               | `"smallwebrtc" \| "daily" \| "websocket" \| "moq"` | Transport backing the client (default `"smallwebrtc"`). The only option that rebuilds the client. |
-| `transportFactory`            | `TransportFactory`                                 | Creates the transport; may return a promise. Read once at client creation.                        |
-| `transportOptions`            | `TransportOptions`                                 | Transport constructor options, read once at creation.                                             |
-| `clientOptions`               | `Partial<PipecatClientOptions>`                    | Merged into the client constructor (defaults: mic on, cam off).                                   |
-| `connectParams`               | `TransportConnectionParams \| APIRequest`          | Connection params, or an `endpoint` object for start-and-connect.                                 |
-| `startBotParams`              | `APIRequest`                                       | When set, `connect()` starts the bot first and connects with the response.                        |
-| `startBotResponseTransformer` | `(r) => r \| Promise<r>`                           | Transforms the startBot response before connecting.                                               |
-| `connectOnMount`              | `boolean`                                          | Connect as soon as the client is ready (default `false`).                                         |
-| `initDevicesOnMount`          | `boolean`                                          | Run `client.initDevices()` once the client exists (default `false`).                              |
-| `onClient`                    | `(client) => void`                                 | Fired once per created client, before device init or connect.                                     |
+| Option                        | Type                                                            | Description                                                                                       |
+| ----------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `transportType`               | `"smallwebrtc" \| "daily" \| "websocket" \| "moq" \| "livekit"` | Transport backing the client (default `"smallwebrtc"`). The only option that rebuilds the client. |
+| `transportFactory`            | `TransportFactory`                                              | Creates the transport; may return a promise. Read once at client creation.                        |
+| `transportOptions`            | `TransportOptions`                                              | Transport constructor options, read once at creation.                                             |
+| `clientOptions`               | `Partial<PipecatClientOptions>`                                 | Merged into the client constructor (defaults: mic on, cam off).                                   |
+| `connectParams`               | `TransportConnectionParams \| APIRequest`                       | Connection params, or an `endpoint` object for start-and-connect.                                 |
+| `startBotParams`              | `APIRequest`                                                    | When set, `connect()` starts the bot first and connects with the response.                        |
+| `startBotResponseTransformer` | `(r) => r \| Promise<r>`                                        | Transforms the startBot response before connecting.                                               |
+| `connectOnMount`              | `boolean`                                                       | Connect as soon as the client is ready (default `false`).                                         |
+| `initDevicesOnMount`          | `boolean`                                                       | Run `client.initDevices()` once the client exists (default `false`).                              |
+| `onClient`                    | `(client) => void`                                              | Fired once per created client, before device init or connect.                                     |
 
 ## Returns
 
