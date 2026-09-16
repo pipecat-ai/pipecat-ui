@@ -4,6 +4,11 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Console } from "@/components/pipecat/console/console";
+import { ConsoleEventsPanel } from "@/components/pipecat/console/events-panel";
+import {
+  usePipecatEventStreamStore,
+  type PipecatEventLog,
+} from "@/hooks/use-pipecat-event-stream";
 import { StubTransport } from "./helpers/stub-transport";
 
 const transports = vi.hoisted(() => ({
@@ -252,5 +257,74 @@ describe("Console", () => {
     });
     await user.click(screen.getByRole("tab", { name: "Events" }));
     expect(await screen.findByText("serverMessage")).toBeInTheDocument();
+  });
+});
+
+describe("ConsoleEventsPanel", () => {
+  it("hides metrics and bot LLM/TTS events and logs bot output status changes once", () => {
+    let seq = 0;
+    const log = (type: string, data?: unknown): PipecatEventLog => ({
+      id: `e${++seq}`,
+      type,
+      data,
+      timestamp: new Date(0),
+    });
+    const output = (segment_id: number, spoken_status: string, text: string) =>
+      log(RTVIEvent.BotOutput, {
+        text,
+        aggregated_by: "sentence",
+        segment_id,
+        will_be_spoken: true,
+        spoken_status,
+      });
+    usePipecatEventStreamStore.setState({
+      events: [
+        log(RTVIEvent.BotLlmStarted),
+        log(RTVIEvent.Metrics, { ttfb: [] }),
+        log(RTVIEvent.BotLlmText, { text: "Hi" }),
+        log(RTVIEvent.BotTranscript, { text: "Hi" }),
+        output(1, "new", "Yes, I can hear you!"),
+        output(2, "new", "How can I help?"),
+        log(RTVIEvent.BotTtsStarted),
+        log(RTVIEvent.BotTtsText, { text: "Yes" }),
+        output(1, "in-progress", "Yes, I can hear you!"),
+        output(1, "in-progress", "Yes, I can hear you!"),
+        output(1, "completed", "Yes, I can hear you!"),
+        // Interrupted: progress but never completed.
+        output(2, "in-progress", "How can I help?"),
+        output(2, "in-progress", "How can I help?"),
+        log(RTVIEvent.BotTtsStopped),
+        log(RTVIEvent.BotLlmStopped),
+        log(RTVIEvent.BotOutput, {
+          text: "[function call]",
+          aggregated_by: "custom",
+          segment_id: 3,
+          will_be_spoken: false,
+        }),
+        // Protocol 1.4.x has no spoken_status; nothing to dedupe on.
+        log(RTVIEvent.BotOutput, { text: "Hi", segment_id: 4, spoken: true }),
+        log(RTVIEvent.BotOutput, { text: "Hi", segment_id: 4, spoken: true }),
+        log(RTVIEvent.BotStoppedSpeaking),
+      ],
+    });
+
+    render(<ConsoleEventsPanel />);
+
+    const rows = document.querySelectorAll("[data-slot=console-event]");
+    expect(
+      Array.from(rows, (row) => row.querySelector("button")?.textContent),
+    ).toEqual([
+      expect.stringContaining(
+        "(sentence, #1, spoken: new): Yes, I can hear you!",
+      ),
+      expect.stringContaining("(sentence, #2, spoken: new): How can I help?"),
+      expect.stringContaining("(sentence, #1, spoken: in-progress)"),
+      expect.stringContaining("(sentence, #1, spoken: completed)"),
+      expect.stringContaining("(sentence, #2, spoken: in-progress)"),
+      expect.stringContaining("(custom, #3, not spoken): [function call]"),
+      expect.stringContaining("(#4, spoken: true): Hi"),
+      expect.stringContaining("(#4, spoken: true): Hi"),
+      expect.stringContaining(RTVIEvent.BotStoppedSpeaking),
+    ]);
   });
 });
