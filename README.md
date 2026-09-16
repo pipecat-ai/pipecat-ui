@@ -31,8 +31,8 @@ and yours to edit.
   audio output with a shared volume store
 - 🪝 **Bootstrap hook** — `use-pipecat-app` builds the client and owns the
   connect lifecycle, using the transport factory you supply
-- 🧱 **Blocks** — a metrics dashboard composed from the components; the console
-  remains a local development preview and is not published in the registry
+- 🧱 **Blocks** — a debugging console and a metrics dashboard composed from the
+  components
 - 🎨 **Your theme, your code** — stock Base UI primitives, `data-state`
   attributes on everything, a tiny semantic token set you can restyle
 
@@ -122,6 +122,7 @@ one your app actually connects with:
 | Daily                 | `@pipecat-ai/daily-transport`        |
 | WebSocket             | `@pipecat-ai/websocket-transport`    |
 | MoQ                   | `@pipecat-ai/moq-transport`          |
+| LiveKit               | `@pipecat-ai/livekit-transport`      |
 
 For lazy loading, pass an async factory that imports the selected package, or
 register an app-owned loader with `registerTransport`. The shipped helper does

@@ -80,13 +80,20 @@ describe("usePipecatEventStream", () => {
     expect(result.current.events[1]!.timestamp).toBeInstanceOf(Date);
   });
 
-  it("never captures LocalAudioLevel", async () => {
+  it("never captures audio level events", async () => {
     const { result } = renderHook(() => usePipecatEventStream());
     expect(
       fakeClient.on.mock.calls.some(
-        ([event]) => event === RTVIEvent.LocalAudioLevel,
+        ([event]) =>
+          event === RTVIEvent.LocalAudioLevel ||
+          event === RTVIEvent.RemoteAudioLevel,
       ),
     ).toBe(false);
+    emit(RTVIEvent.RemoteAudioLevel, 0.4, {
+      id: "bot",
+      name: "bot",
+      local: false,
+    });
     emit(RTVIEvent.BotStartedSpeaking);
     await flushed(
       () => result.current.events,

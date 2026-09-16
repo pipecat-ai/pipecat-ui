@@ -43,8 +43,9 @@ function EventsLog() {
 
 Must be rendered inside a `PipecatClientProvider`. The log clears
 automatically when a new session starts (`disconnected → initializing`), and
-`LocalAudioLevel` is never captured (it fires continuously). `clear()` also
-drops the not-yet-flushed batch, so pre-clear events never resurface.
+`LocalAudioLevel` and `RemoteAudioLevel` are never captured (they fire
+continuously). `clear()` also drops the not-yet-flushed batch, so pre-clear
+events never resurface.
 
 ## Options
 

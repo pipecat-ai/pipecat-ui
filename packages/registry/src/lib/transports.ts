@@ -1,6 +1,7 @@
 import type { Transport } from "@pipecat-ai/client-js";
 
-export type TransportType = "daily" | "smallwebrtc" | "websocket" | "moq";
+export type TransportType =
+  "daily" | "smallwebrtc" | "websocket" | "moq" | "livekit";
 export type TransportOptions = Record<string, unknown>;
 export type TransportFactory = (
   options?: TransportOptions,
@@ -13,6 +14,7 @@ const INSTALL_HINTS: Record<TransportType, string> = {
   smallwebrtc: "npm install @pipecat-ai/small-webrtc-transport",
   websocket: "npm install @pipecat-ai/websocket-transport",
   moq: "npm install @pipecat-ai/moq-transport",
+  livekit: "npm install @pipecat-ai/livekit-transport",
 };
 const loaders = new Map<TransportType, { loader: TransportLoader }[]>();
 

@@ -1,4 +1,4 @@
-import { PipecatClient } from "@pipecat-ai/client-js";
+import { PipecatClient, RTVIEvent } from "@pipecat-ai/client-js";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -8,12 +8,10 @@ import { StubTransport } from "./helpers/stub-transport";
 
 const transports = vi.hoisted(() => ({
   createTransport: vi.fn(),
-  loadTransport: vi.fn(),
 }));
 
 vi.mock("@/lib/transports", () => ({
   createTransport: transports.createTransport,
-  loadTransport: transports.loadTransport,
 }));
 
 function setViewportWidth(width: number) {
@@ -34,7 +32,6 @@ beforeEach(() => {
   transports.createTransport.mockImplementation(
     async () => new StubTransport(),
   );
-  transports.loadTransport.mockResolvedValue(StubTransport);
   // The real connect awaits a bot-ready handshake that never comes in jsdom.
   vi.spyOn(PipecatClient.prototype, "connect").mockResolvedValue(
     undefined as never,
@@ -83,14 +80,14 @@ describe("Console", () => {
     expect(document.querySelector("[data-slot=spinner]")).toBeNull();
   });
 
-  it("hides bot video by default and renders bot audio", async () => {
+  it("renders bot audio and bot video by default", async () => {
     await renderConsole(<Console />);
     expect(
       document.querySelector("[data-slot=console-bot-audio-panel]"),
     ).not.toBeNull();
     expect(
       document.querySelector("[data-slot=console-bot-video-panel]"),
-    ).toBeNull();
+    ).not.toBeNull();
   });
 
   it("removes regions per no* props and drops the collapse toggle without an info panel", async () => {
@@ -142,24 +139,118 @@ describe("Console", () => {
     setViewportWidth(500);
     await renderConsole(<Console />);
     expect(screen.getAllByRole("tab").length).toBeGreaterThanOrEqual(3);
-    // Default tab (bot media) is mounted exactly once; inactive tabs are
-    // unmounted entirely — the opposite of the old CSS-hidden double tree.
+    // Conversation opens by default and is mounted once; other inactive tabs
+    // are unmounted entirely.
+    expect(
+      document.querySelectorAll("[data-slot=console-conversation-panel]"),
+    ).toHaveLength(1);
     expect(
       document.querySelectorAll("[data-slot=console-bot-audio-panel]"),
-    ).toHaveLength(1);
+    ).toHaveLength(0);
     expect(
       document.querySelectorAll("[data-slot=console-events-panel]"),
     ).toHaveLength(0);
   });
 
-  it("mounts the codec setter only for smallwebrtc", async () => {
-    await renderConsole(<Console audioCodec="opus" />);
-    await waitFor(() =>
-      expect(transports.loadTransport).toHaveBeenCalledWith("smallwebrtc"),
+  it("builds from transportFactory without a registered loader and applies codecs only for smallwebrtc", async () => {
+    const codecTransport = () =>
+      Object.assign(new StubTransport(), {
+        setAudioCodec: vi.fn(),
+        setVideoCodec: vi.fn(),
+      });
+    const webrtc = codecTransport();
+    const factory = vi.fn(() => webrtc);
+    const { unmount } = await renderConsole(
+      <Console
+        transportFactory={factory}
+        transportOptions={{ waitForICEGathering: true }}
+        audioCodec="opus"
+      />,
     );
+    expect(factory).toHaveBeenCalledWith({ waitForICEGathering: true });
+    expect(transports.createTransport).not.toHaveBeenCalled();
+    expect(webrtc.setAudioCodec).toHaveBeenCalledWith("opus");
+    expect(webrtc.setVideoCodec).toHaveBeenCalledWith("default");
+    unmount();
 
-    transports.loadTransport.mockClear();
-    await renderConsole(<Console transportType="websocket" />);
-    expect(transports.loadTransport).not.toHaveBeenCalled();
+    const websocket = codecTransport();
+    await renderConsole(
+      <Console transportType="websocket" transportFactory={() => websocket} />,
+    );
+    expect(websocket.setAudioCodec).not.toHaveBeenCalled();
+  });
+
+  it("keeps collecting metrics while the metrics tab is closed", async () => {
+    let client: PipecatClient | undefined;
+    const user = userEvent.setup();
+    await renderConsole(
+      <Console
+        onClient={(created) => {
+          client = created;
+        }}
+      />,
+    );
+    act(() => {
+      client!.emit(RTVIEvent.Metrics, {
+        ttfb: [{ processor: "CartesiaTTSService#0", value: 0.1 }],
+      });
+    });
+    await user.click(screen.getByRole("tab", { name: "Metrics" }));
+    expect(
+      await screen.findByText("TTFB · CartesiaTTSService#0"),
+    ).toBeInTheDocument();
+  });
+
+  it("shows the camera preview tile only while the camera is on", async () => {
+    let client: PipecatClient | undefined;
+    await renderConsole(
+      <Console
+        onClient={(created) => {
+          client = created;
+        }}
+      />,
+    );
+    expect(
+      document.querySelector("[data-slot=user-video-control]"),
+    ).not.toBeNull();
+    expect(document.querySelector("[data-slot=user-video-tile]")).toBeNull();
+
+    vi.spyOn(PipecatClient.prototype, "isCamEnabled", "get").mockReturnValue(
+      true,
+    );
+    act(() => {
+      client!.emit(
+        RTVIEvent.TrackStarted,
+        { kind: "video" } as MediaStreamTrack,
+        {
+          id: "local",
+          name: "local",
+          local: true,
+        },
+      );
+    });
+    await waitFor(() =>
+      expect(
+        document.querySelector("[data-slot=user-video-tile]"),
+      ).not.toBeNull(),
+    );
+  });
+
+  it("keeps capturing events while the mobile events tab is closed", async () => {
+    setViewportWidth(500);
+    let client: PipecatClient | undefined;
+    const user = userEvent.setup();
+    await renderConsole(
+      <Console
+        onClient={(created) => {
+          client = created;
+        }}
+      />,
+    );
+    act(() => {
+      client!.emit(RTVIEvent.ServerMessage, { hello: "world" });
+    });
+    await user.click(screen.getByRole("tab", { name: "Events" }));
+    expect(await screen.findByText("serverMessage")).toBeInTheDocument();
   });
 });

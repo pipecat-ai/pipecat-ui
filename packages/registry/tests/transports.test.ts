@@ -41,6 +41,15 @@ describe("app-owned transport loaders", () => {
     }
   });
 
+  it("accepts a livekit loader", async () => {
+    const cleanup = registerTransport("livekit", async () => StubTransport);
+    try {
+      expect(await createTransport("livekit")).toBeInstanceOf(StubTransport);
+    } finally {
+      cleanup();
+    }
+  });
+
   it("does not resurrect an earlier registration disposed out of order", async () => {
     const first = registerTransport("smallwebrtc", async () => StubTransport);
     const second = registerTransport("smallwebrtc", async () => StubTransport);
