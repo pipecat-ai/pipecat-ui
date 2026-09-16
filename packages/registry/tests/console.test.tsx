@@ -261,7 +261,7 @@ describe("Console", () => {
 });
 
 describe("ConsoleEventsPanel", () => {
-  it("hides metrics, bot LLM/TTS events and interim bot output", () => {
+  it("hides metrics and bot LLM/TTS events and logs bot output status changes once", () => {
     let seq = 0;
     const log = (type: string, data?: unknown): PipecatEventLog => ({
       id: `e${++seq}`,
@@ -269,30 +269,41 @@ describe("ConsoleEventsPanel", () => {
       data,
       timestamp: new Date(0),
     });
-    const output = (text: string, data: object) =>
-      log(RTVIEvent.BotOutput, { text, ...data });
+    const output = (segment_id: number, spoken_status: string, text: string) =>
+      log(RTVIEvent.BotOutput, {
+        text,
+        aggregated_by: "sentence",
+        segment_id,
+        will_be_spoken: true,
+        spoken_status,
+      });
     usePipecatEventStreamStore.setState({
       events: [
         log(RTVIEvent.BotLlmStarted),
         log(RTVIEvent.Metrics, { ttfb: [] }),
         log(RTVIEvent.BotLlmText, { text: "Hi" }),
         log(RTVIEvent.BotTranscript, { text: "Hi" }),
-        output("new", { will_be_spoken: true, spoken_status: "new" }),
+        output(1, "new", "Yes, I can hear you!"),
+        output(2, "new", "How can I help?"),
         log(RTVIEvent.BotTtsStarted),
-        log(RTVIEvent.BotTtsText, { text: "Hi" }),
-        output("progress", {
-          will_be_spoken: true,
-          spoken_status: "in-progress",
-        }),
-        output("completed", {
-          will_be_spoken: true,
-          spoken_status: "completed",
-        }),
-        output("unspoken", { will_be_spoken: false, spoken_status: "new" }),
+        log(RTVIEvent.BotTtsText, { text: "Yes" }),
+        output(1, "in-progress", "Yes, I can hear you!"),
+        output(1, "in-progress", "Yes, I can hear you!"),
+        output(1, "completed", "Yes, I can hear you!"),
+        // Interrupted: progress but never completed.
+        output(2, "in-progress", "How can I help?"),
+        output(2, "in-progress", "How can I help?"),
         log(RTVIEvent.BotTtsStopped),
         log(RTVIEvent.BotLlmStopped),
-        // Protocol 1.4.x has no will_be_spoken; nothing to filter on.
-        output("legacy", { spoken: false }),
+        log(RTVIEvent.BotOutput, {
+          text: "[function call]",
+          aggregated_by: "custom",
+          segment_id: 3,
+          will_be_spoken: false,
+        }),
+        // Protocol 1.4.x has no spoken_status; nothing to dedupe on.
+        log(RTVIEvent.BotOutput, { text: "Hi", segment_id: 4, spoken: true }),
+        log(RTVIEvent.BotOutput, { text: "Hi", segment_id: 4, spoken: true }),
         log(RTVIEvent.BotStoppedSpeaking),
       ],
     });
@@ -303,9 +314,16 @@ describe("ConsoleEventsPanel", () => {
     expect(
       Array.from(rows, (row) => row.querySelector("button")?.textContent),
     ).toEqual([
-      expect.stringContaining('"completed"'),
-      expect.stringContaining('"unspoken"'),
-      expect.stringContaining('"legacy"'),
+      expect.stringContaining(
+        "(sentence, #1, spoken: new): Yes, I can hear you!",
+      ),
+      expect.stringContaining("(sentence, #2, spoken: new): How can I help?"),
+      expect.stringContaining("(sentence, #1, spoken: in-progress)"),
+      expect.stringContaining("(sentence, #1, spoken: completed)"),
+      expect.stringContaining("(sentence, #2, spoken: in-progress)"),
+      expect.stringContaining("(custom, #3, not spoken): [function call]"),
+      expect.stringContaining("(#4, spoken: true): Hi"),
+      expect.stringContaining("(#4, spoken: true): Hi"),
       expect.stringContaining(RTVIEvent.BotStoppedSpeaking),
     ]);
   });
