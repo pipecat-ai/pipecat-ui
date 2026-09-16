@@ -4,6 +4,11 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Console } from "@/components/pipecat/console/console";
+import { ConsoleEventsPanel } from "@/components/pipecat/console/events-panel";
+import {
+  usePipecatEventStreamStore,
+  type PipecatEventLog,
+} from "@/hooks/use-pipecat-event-stream";
 import { StubTransport } from "./helpers/stub-transport";
 
 const transports = vi.hoisted(() => ({
@@ -252,5 +257,56 @@ describe("Console", () => {
     });
     await user.click(screen.getByRole("tab", { name: "Events" }));
     expect(await screen.findByText("serverMessage")).toBeInTheDocument();
+  });
+});
+
+describe("ConsoleEventsPanel", () => {
+  it("hides metrics, bot LLM/TTS events and interim bot output", () => {
+    let seq = 0;
+    const log = (type: string, data?: unknown): PipecatEventLog => ({
+      id: `e${++seq}`,
+      type,
+      data,
+      timestamp: new Date(0),
+    });
+    const output = (text: string, data: object) =>
+      log(RTVIEvent.BotOutput, { text, ...data });
+    usePipecatEventStreamStore.setState({
+      events: [
+        log(RTVIEvent.BotLlmStarted),
+        log(RTVIEvent.Metrics, { ttfb: [] }),
+        log(RTVIEvent.BotLlmText, { text: "Hi" }),
+        log(RTVIEvent.BotTranscript, { text: "Hi" }),
+        output("new", { will_be_spoken: true, spoken_status: "new" }),
+        log(RTVIEvent.BotTtsStarted),
+        log(RTVIEvent.BotTtsText, { text: "Hi" }),
+        output("progress", {
+          will_be_spoken: true,
+          spoken_status: "in-progress",
+        }),
+        output("completed", {
+          will_be_spoken: true,
+          spoken_status: "completed",
+        }),
+        output("unspoken", { will_be_spoken: false, spoken_status: "new" }),
+        log(RTVIEvent.BotTtsStopped),
+        log(RTVIEvent.BotLlmStopped),
+        // Protocol 1.4.x has no will_be_spoken; nothing to filter on.
+        output("legacy", { spoken: false }),
+        log(RTVIEvent.BotStoppedSpeaking),
+      ],
+    });
+
+    render(<ConsoleEventsPanel />);
+
+    const rows = document.querySelectorAll("[data-slot=console-event]");
+    expect(
+      Array.from(rows, (row) => row.querySelector("button")?.textContent),
+    ).toEqual([
+      expect.stringContaining('"completed"'),
+      expect.stringContaining('"unspoken"'),
+      expect.stringContaining('"legacy"'),
+      expect.stringContaining(RTVIEvent.BotStoppedSpeaking),
+    ]);
   });
 });

@@ -1,5 +1,6 @@
 "use client";
 
+import { RTVIEvent, type BotOutputData } from "@pipecat-ai/client-js";
 import { PauseIcon, PlayIcon, SearchIcon, Trash2Icon } from "lucide-react";
 import * as React from "react";
 
@@ -34,6 +35,31 @@ function summarize(data: unknown): string {
   } catch {
     return String(data);
   }
+}
+
+/** Chatter covered by botOutput rows and the metrics panel. */
+const HIDDEN_EVENTS: string[] = [
+  RTVIEvent.Metrics,
+  RTVIEvent.BotTranscript,
+  RTVIEvent.BotLlmStarted,
+  RTVIEvent.BotLlmText,
+  RTVIEvent.BotLlmStopped,
+  RTVIEvent.BotTtsStarted,
+  RTVIEvent.BotTtsText,
+  RTVIEvent.BotTtsStopped,
+];
+
+/**
+ * RTVI 2.0.0+ sends a segment's botOutput when it is aggregated and again on
+ * every spoken progress update (about once per TTS word). Show only the final
+ * state: text that will not be spoken, or spoken text once completed. Legacy
+ * 1.4.x events lack will_be_spoken and are shown unchanged.
+ */
+function isShown(event: PipecatEventLog): boolean {
+  if (event.type !== RTVIEvent.BotOutput) return true;
+  const data = event.data as Partial<BotOutputData> | undefined;
+  if (data?.will_be_spoken === undefined) return true;
+  return !data.will_be_spoken || data.spoken_status === "completed";
 }
 
 function EventRow({ event }: { event: PipecatEventLog }) {
@@ -71,21 +97,27 @@ export interface ConsoleEventsPanelProps {
 /**
  * Live RTVI event log over the shared use-pipecat-event-stream store:
  * filter-as-you-type, pause/resume, clear, click-to-expand payloads, and
- * scroll pinning that follows the tail until you scroll away. Capture is
- * shared, so a collapsed panel misses nothing. Must be rendered inside a
+ * scroll pinning that follows the tail until you scroll away. Metrics, bot
+ * LLM/TTS events and interim botOutput updates are hidden. Capture is shared, so a
+ * collapsed panel misses nothing. Must be rendered inside a
  * PipecatClientProvider.
  */
 export function ConsoleEventsPanel({
   collapsed = false,
   className,
 }: ConsoleEventsPanelProps) {
-  const { events, paused, setPaused, clear } = usePipecatEventStream();
+  const { events, paused, setPaused, clear } = usePipecatEventStream({
+    ignoreEvents: HIDDEN_EVENTS,
+  });
   const [filter, setFilter] = React.useState("");
 
   const filtered = React.useMemo(() => {
     const needle = filter.trim().toLowerCase();
-    if (!needle) return events;
-    return events.filter((event) => event.type.toLowerCase().includes(needle));
+    return events.filter(
+      (event) =>
+        isShown(event) &&
+        (!needle || event.type.toLowerCase().includes(needle)),
+    );
   }, [events, filter]);
 
   // Scroll pinning: stick to the tail unless the user scrolled away.
