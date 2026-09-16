@@ -540,7 +540,7 @@
       "type": "registry:block",
       "title": "Metrics",
       "description": "Metrics dashboard block with a Performance/Usage tab navigator: per-processor latency tiles and charts, plus running token/character/audio usage totals, on the stock shadcn chart (recharts).",
-      "dependencies": ["recharts@^3.10.1"],
+      "dependencies": ["recharts@^3.8.0"],
       "registryDependencies": [
         "chart",
         "tabs",

@@ -7,6 +7,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  satisfiesRange,
   validateArtifacts,
   validateRegistry,
   registryRoot,
@@ -262,12 +263,11 @@ try {
             path.join(dir, "node_modules", packageName, "package.json"),
           ),
         ).version;
-        if (packageName.startsWith("@pipecat-ai/"))
-          assert.equal(
-            version.split(".")[0],
-            "1",
-            `${name}: incompatible SDK major ${version}`,
-          );
+        const range = dep.slice(split + 1);
+        assert(
+          satisfiesRange(version, range),
+          `${name}: installed ${packageName}@${version} is outside the declared ${range}`,
+        );
       }
     }
     await run(path.join(dir, "node_modules/.bin/tsc"), ["--noEmit"], dir);

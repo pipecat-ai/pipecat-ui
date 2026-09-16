@@ -7,6 +7,7 @@ import {
   importsOf,
   parseDependency,
   registryRoot,
+  satisfiesRange,
   validateArtifacts,
   validateRegistry,
 } from "./validate.mjs";
@@ -32,6 +33,18 @@ test("dependency parsing rejects floating majors and bare names", () => {
     name: "@pipecat-ai/client-js",
     range: "^1.13.0",
   });
+});
+
+test("installed versions are checked against declared ranges", () => {
+  assert(satisfiesRange("3.10.1", "^3.8.0"));
+  assert(!satisfiesRange("3.8.0", "^3.10.1"));
+  assert(!satisfiesRange("4.0.0", "^3.8.0"));
+  assert(satisfiesRange("0.1.4", "^0.1.1"));
+  assert(!satisfiesRange("0.2.0", "^0.1.1"));
+  assert(satisfiesRange("1.2.9", "~1.2.3"));
+  assert(!satisfiesRange("1.3.0", "~1.2.3"));
+  assert(satisfiesRange("1.2.3", "1.2.3"));
+  assert(!satisfiesRange("1.2.4", "1.2.3"));
 });
 
 test("import analysis includes type imports, re-exports and dynamic imports", () => {
