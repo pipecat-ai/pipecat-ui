@@ -62,6 +62,29 @@ export function parseDependency(value) {
   return { name: match[1], range: match[2] };
 }
 
+/** Whether an installed version satisfies a ^, ~ or exact range from parseDependency. */
+export function satisfiesRange(version, range) {
+  const operator = /^[~^]/.test(range) ? range[0] : "";
+  const parse = (value) => value.split("-")[0].split(".").map(Number);
+  const [major, minor, patch] = parse(version);
+  const [wantMajor, wantMinor, wantPatch] = parse(range.slice(operator.length));
+  const atLeast =
+    major !== wantMajor
+      ? major > wantMajor
+      : minor !== wantMinor
+        ? minor > wantMinor
+        : patch >= wantPatch;
+  if (operator === "^") {
+    return wantMajor > 0
+      ? major === wantMajor && atLeast
+      : major === 0 && minor === wantMinor && atLeast;
+  }
+  if (operator === "~") {
+    return major === wantMajor && minor === wantMinor && atLeast;
+  }
+  return major === wantMajor && minor === wantMinor && patch === wantPatch;
+}
+
 function installedPath(file) {
   if (file.target) return file.target;
   const dir = { "registry:hook": "hooks", "registry:lib": "lib" }[file.type];
