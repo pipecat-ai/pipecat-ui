@@ -173,7 +173,7 @@ describe("ConversationView", () => {
       clientHeight: { value: 200 },
     });
     scroller.scrollTo = vi.fn();
-    scroller.scrollTop = 300;
+    scroller.scrollTop = 800;
     fireEvent.scroll(scroller);
 
     const second = message();
@@ -186,9 +186,8 @@ describe("ConversationView", () => {
       behavior: "smooth",
     });
 
-    // Once following again, scrolling up from the bottom still detaches.
-    scroller.scrollTop = 800;
-    fireEvent.scroll(scroller);
+    // Already at the bottom, so re-enabling scrolls nowhere. A single jump up
+    // must still count against the position recorded while disabled.
     scroller.scrollTop = 400;
     fireEvent.scroll(scroller);
     vi.mocked(scroller.scrollTo).mockClear();

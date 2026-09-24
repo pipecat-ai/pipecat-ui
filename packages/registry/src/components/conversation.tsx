@@ -64,12 +64,14 @@ export function ConversationView({
   // Only a scroll away from the edge detaches. Our own smooth scroll reports
   // intermediate positions short of the edge while it moves toward it.
   const updateScrollState = useCallback(() => {
-    if (!scrollRef.current || noAutoscroll) return;
+    if (!scrollRef.current) return;
     const { clientHeight, scrollHeight, scrollTop } = scrollRef.current;
     const movedAway = reverseOrder
       ? scrollTop > lastScrollTop.current
       : scrollTop < lastScrollTop.current;
+    // Tracked even while noAutoscroll is set, so re-enabling starts fresh.
     lastScrollTop.current = scrollTop;
+    if (noAutoscroll) return;
     const atEdge = reverseOrder
       ? scrollTop <= 1
       : Math.ceil(scrollHeight - scrollTop) <= Math.ceil(clientHeight);
