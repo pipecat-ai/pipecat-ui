@@ -88,6 +88,8 @@ describe("ConversationView", () => {
       clientHeight: { value: 200 },
     });
     scroller.scrollTo = vi.fn();
+    scroller.scrollTop = 800;
+    fireEvent.scroll(scroller);
     scroller.scrollTop = 100;
     fireEvent.scroll(scroller);
 
@@ -102,6 +104,95 @@ describe("ConversationView", () => {
       top: 1000,
       behavior: "smooth",
     });
+  });
+
+  it("keeps following while its own smooth scroll is still moving", () => {
+    const { container, rerender } = render(<ConversationView />);
+    const first = message();
+    rerender(<ConversationView messages={[first]} />);
+
+    const scroller = container.querySelector<HTMLElement>(".overflow-y-auto")!;
+    Object.defineProperties(scroller, {
+      scrollHeight: { value: 1000 },
+      clientHeight: { value: 200 },
+    });
+    scroller.scrollTo = vi.fn();
+
+    // An intermediate frame of the animation toward the bottom.
+    scroller.scrollTop = 300;
+    fireEvent.scroll(scroller);
+
+    rerender(<ConversationView messages={[first, message()]} />);
+    expect(scroller.scrollTo).toHaveBeenCalledWith({
+      top: 1000,
+      behavior: "smooth",
+    });
+  });
+
+  it("with reverseOrder, detaches scrolling down and reattaches at the top", () => {
+    const { container, rerender } = render(<ConversationView reverseOrder />);
+    const messages = [message()];
+    rerender(<ConversationView messages={messages} reverseOrder />);
+
+    const scroller = container.querySelector<HTMLElement>(".overflow-y-auto")!;
+    Object.defineProperties(scroller, {
+      scrollHeight: { value: 1000 },
+      clientHeight: { value: 200 },
+    });
+    scroller.scrollTo = vi.fn();
+    const scrollTo = (top: number) => {
+      scroller.scrollTop = top;
+      fireEvent.scroll(scroller);
+      messages.push(message());
+      rerender(<ConversationView messages={[...messages]} reverseOrder />);
+    };
+
+    scrollTo(300);
+    expect(scroller.scrollTo).not.toHaveBeenCalled();
+
+    // Heading back toward the top is not enough on its own.
+    scrollTo(100);
+    expect(scroller.scrollTo).not.toHaveBeenCalled();
+
+    scrollTo(0);
+    expect(scroller.scrollTo).toHaveBeenCalledWith({
+      top: 0,
+      behavior: "smooth",
+    });
+  });
+
+  it("ignores scrolling while noAutoscroll is set and follows once cleared", () => {
+    const first = message();
+    const { container, rerender } = render(
+      <ConversationView messages={[first]} noAutoscroll />,
+    );
+
+    const scroller = container.querySelector<HTMLElement>(".overflow-y-auto")!;
+    Object.defineProperties(scroller, {
+      scrollHeight: { value: 1000 },
+      clientHeight: { value: 200 },
+    });
+    scroller.scrollTo = vi.fn();
+    scroller.scrollTop = 800;
+    fireEvent.scroll(scroller);
+
+    const second = message();
+    rerender(<ConversationView messages={[first, second]} noAutoscroll />);
+    expect(scroller.scrollTo).not.toHaveBeenCalled();
+
+    rerender(<ConversationView messages={[first, second]} />);
+    expect(scroller.scrollTo).toHaveBeenCalledWith({
+      top: 1000,
+      behavior: "smooth",
+    });
+
+    // Already at the bottom, so re-enabling scrolls nowhere. A single jump up
+    // must still count against the position recorded while disabled.
+    scroller.scrollTop = 400;
+    fireEvent.scroll(scroller);
+    vi.mocked(scroller.scrollTo).mockClear();
+    rerender(<ConversationView messages={[first, second, message()]} />);
+    expect(scroller.scrollTo).not.toHaveBeenCalled();
   });
 
   it("supports custom participant labels", () => {
