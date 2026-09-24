@@ -88,6 +88,8 @@ describe("ConversationView", () => {
       clientHeight: { value: 200 },
     });
     scroller.scrollTo = vi.fn();
+    scroller.scrollTop = 800;
+    fireEvent.scroll(scroller);
     scroller.scrollTop = 100;
     fireEvent.scroll(scroller);
 
@@ -98,6 +100,29 @@ describe("ConversationView", () => {
     scroller.scrollTop = 800;
     fireEvent.scroll(scroller);
     rerender(<ConversationView messages={[first, second, message()]} />);
+    expect(scroller.scrollTo).toHaveBeenCalledWith({
+      top: 1000,
+      behavior: "smooth",
+    });
+  });
+
+  it("keeps following while its own smooth scroll is still moving", () => {
+    const { container, rerender } = render(<ConversationView />);
+    const first = message();
+    rerender(<ConversationView messages={[first]} />);
+
+    const scroller = container.querySelector<HTMLElement>(".overflow-y-auto")!;
+    Object.defineProperties(scroller, {
+      scrollHeight: { value: 1000 },
+      clientHeight: { value: 200 },
+    });
+    scroller.scrollTo = vi.fn();
+
+    // An intermediate frame of the animation toward the bottom.
+    scroller.scrollTop = 300;
+    fireEvent.scroll(scroller);
+
+    rerender(<ConversationView messages={[first, message()]} />);
     expect(scroller.scrollTo).toHaveBeenCalledWith({
       top: 1000,
       behavior: "smooth",
