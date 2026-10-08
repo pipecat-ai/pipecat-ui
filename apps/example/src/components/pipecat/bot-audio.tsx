@@ -75,6 +75,12 @@ export function BotAudioOutput() {
       if (oldTrack && oldTrack.id === botAudioTrack.id) return;
     }
     el.srcObject = new MediaStream([botAudioTrack]);
+    // iOS Safari refuses autoPlay when the track arrives after the user's
+    // tap, leaving the page silent with no error. Start playback explicitly
+    // and log a rejection so it is visible.
+    void el.play().catch((err: unknown) => {
+      console.warn("BotAudioOutput: play() rejected", err);
+    });
   }, [botAudioTrack]);
 
   useEffect(() => {
@@ -103,7 +109,7 @@ export function BotAudioOutput() {
     }, []),
   );
 
-  return <audio ref={audioRef} autoPlay />;
+  return <audio ref={audioRef} autoPlay playsInline />;
 }
 
 type SliderProps = React.ComponentProps<typeof Slider>;
