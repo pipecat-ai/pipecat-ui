@@ -7,7 +7,7 @@ import { Panel } from "@/components/demo/panel";
 import { Tray } from "@/components/demo/tray";
 import { AudioVisualizerWave } from "@/components/pipecat/audio-visualizer-wave";
 import { AudioVisualizerBar } from "@/components/pipecat/audio-visualizer-bar";
-import { BotAudioOutput } from "@/components/pipecat/bot-audio";
+import { BotAudioOutput, unlockBotAudio } from "@/components/pipecat/bot-audio";
 import { ConnectButton } from "@/components/pipecat/connect-button";
 import { Conversation } from "@/components/pipecat/conversation";
 import { TextInput } from "@/components/pipecat/text-input";
@@ -90,7 +90,13 @@ function Session({
             reference client
           </span>
         </h1>
-        <ConnectButton onConnect={connect} onDisconnect={disconnect} />
+        <ConnectButton
+          onConnect={() => {
+            unlockBotAudio();
+            void connect();
+          }}
+          onDisconnect={disconnect}
+        />
       </header>
       <main className="grid min-h-0 min-w-0 flex-1 grid-cols-1 gap-5 md:grid-cols-[1.45fr_1fr]">
         <Panel

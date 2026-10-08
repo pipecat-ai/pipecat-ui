@@ -39,6 +39,27 @@ The slider is a mute toggle, the track, and a percent readout; the mute button d
 volume to 0 and restores the last audible level when clicked again. The popover shows the
 same slider without its label.
 
+## Mobile Safari: unlock inside the tap
+
+iOS Safari only allows playback that starts inside a user gesture. The bot track arrives a
+few seconds after the Connect tap, so `autoPlay` is refused and the page stays silent.
+Call `unlockBotAudio` synchronously in the tap handler; it plays the output element muted
+so later playback of the bot track counts as user-activated:
+
+```tsx
+import { unlockBotAudio } from "@/components/pipecat/bot-audio";
+
+<ConnectButton
+  onConnect={() => {
+    unlockBotAudio();
+    void connect();
+  }}
+  onDisconnect={disconnect}
+/>;
+```
+
+It is safe to call on every platform and is a no-op before `BotAudioOutput` mounts.
+
 ## Key props
 
 | Prop                                     | Type                                | Description                                                                                                            |
