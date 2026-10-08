@@ -63,6 +63,52 @@ describe("BotAudioOutput", () => {
     expect(stream.getAudioTracks()).toEqual([track]);
   });
 
+  it("warns without throwing when play() is rejected", async () => {
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, "play")
+      .mockImplementation(() =>
+        Promise.reject(
+          Object.assign(new Error("denied"), { name: "NotAllowedError" }),
+        ),
+      );
+    hooks.usePipecatClientMediaTrack.mockReturnValue(fakeTrack("t1"));
+
+    expect(() => render(<BotAudioOutput />)).not.toThrow();
+    expect(play).toHaveBeenCalledTimes(1);
+    await waitFor(() =>
+      expect(consoleWarn).toHaveBeenCalledWith(
+        "BotAudioOutput: play() rejected",
+        expect.objectContaining({ name: "NotAllowedError" }),
+      ),
+    );
+    play.mockRestore();
+    consoleWarn.mockRestore();
+  });
+
+  it("stays quiet when play() is aborted by a track change", async () => {
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, "play")
+      .mockImplementation(() =>
+        Promise.reject(
+          Object.assign(new Error("interrupted"), { name: "AbortError" }),
+        ),
+      );
+    hooks.usePipecatClientMediaTrack.mockReturnValue(fakeTrack("t1"));
+
+    render(<BotAudioOutput />);
+    expect(play).toHaveBeenCalledTimes(1);
+    // Let the rejection settle before asserting nothing was logged.
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(consoleWarn).not.toHaveBeenCalled();
+    play.mockRestore();
+    consoleWarn.mockRestore();
+  });
+
   it("leaves srcObject unset while there is no bot track", () => {
     const { container } = render(<BotAudioOutput />);
     expect(container.querySelector("audio")!.srcObject).toBeNull();

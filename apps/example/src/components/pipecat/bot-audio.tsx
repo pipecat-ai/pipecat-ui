@@ -32,6 +32,14 @@ function isIconSize(size: ButtonProps["size"]): boolean {
   return typeof size === "string" && size.startsWith("icon");
 }
 
+function isAbortError(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    (err as { name?: unknown }).name === "AbortError"
+  );
+}
+
 function clampVolume(v: number): number {
   if (Number.isNaN(v)) return 0;
   return Math.min(1, Math.max(0, v));
@@ -101,8 +109,10 @@ export function BotAudioOutput() {
     el.srcObject = new MediaStream([botAudioTrack]);
     // iOS Safari refuses autoPlay when the track arrives after the user's
     // tap, leaving the page silent with no error. Start playback explicitly
-    // and log a rejection so it is visible.
+    // and log a rejection so it is visible. AbortError means the track was
+    // swapped or removed while play() was pending, not a real failure.
     void el.play().catch((err: unknown) => {
+      if (isAbortError(err)) return;
       console.warn("BotAudioOutput: play() rejected", err);
     });
   }, [botAudioTrack]);
@@ -135,7 +145,7 @@ export function BotAudioOutput() {
     }, []),
   );
 
-  return <audio ref={audioRef} autoPlay playsInline />;
+  return <audio ref={audioRef} autoPlay />;
 }
 
 type SliderProps = React.ComponentProps<typeof Slider>;
