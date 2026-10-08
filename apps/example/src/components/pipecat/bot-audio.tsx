@@ -32,6 +32,14 @@ function isIconSize(size: ButtonProps["size"]): boolean {
   return typeof size === "string" && size.startsWith("icon");
 }
 
+function isAbortError(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    (err as { name?: unknown }).name === "AbortError"
+  );
+}
+
 function clampVolume(v: number): number {
   if (Number.isNaN(v)) return 0;
   return Math.min(1, Math.max(0, v));
@@ -54,6 +62,30 @@ export const useBotAudio = create<BotAudioState>()((set) => ({
   setVolume: (volume) => set({ volume: clampVolume(volume) }),
 }));
 
+// The mounted output element, so unlockBotAudio can reach it from a gesture
+// handler without a ref or context.
+let outputElement: HTMLAudioElement | null = null;
+
+/**
+ * Call synchronously inside the user's gesture (the Connect tap) so iOS
+ * Safari treats later playback of the bot track as user-activated. Plays the
+ * mounted output element muted, then restores its muted state. No-op when
+ * BotAudioOutput is not mounted. The rejection it swallows is expected on
+ * desktop browsers, where no unlock is needed.
+ */
+export function unlockBotAudio(): void {
+  const el = outputElement;
+  if (!el) return;
+  const wasMuted = el.muted;
+  el.muted = true;
+  void el
+    .play()
+    .catch(() => undefined)
+    .finally(() => {
+      el.muted = wasMuted;
+    });
+}
+
 /** Mount once inside PipecatClientProvider, in place of PipecatClientAudio, to use shared volume controls. */
 export function BotAudioOutput() {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -75,11 +107,21 @@ export function BotAudioOutput() {
       if (oldTrack && oldTrack.id === botAudioTrack.id) return;
     }
     el.srcObject = new MediaStream([botAudioTrack]);
+    // iOS Safari refuses autoPlay when the track arrives after the user's
+    // tap, leaving the page silent with no error. Start playback explicitly
+    // and log a rejection so it is visible. AbortError means the track was
+    // swapped or removed while play() was pending, not a real failure.
+    void el.play().catch((err: unknown) => {
+      if (isAbortError(err)) return;
+      console.warn("BotAudioOutput: play() rejected", err);
+    });
   }, [botAudioTrack]);
 
   useEffect(() => {
     const el = audioRef.current;
+    outputElement = el;
     return () => {
+      if (outputElement === el) outputElement = null;
       if (el) el.srcObject = null;
     };
   }, []);
