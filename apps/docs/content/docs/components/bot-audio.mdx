@@ -43,8 +43,9 @@ same slider without its label.
 
 iOS Safari only allows playback that starts inside a user gesture. The bot track arrives a
 few seconds after the Connect tap, so `autoPlay` is refused and the page stays silent.
-Call `unlockBotAudio` synchronously in the tap handler; it plays the output element muted
-so later playback of the bot track counts as user-activated:
+Call `unlockBotAudio` synchronously in the tap handler; it calls `play()` on the output
+element (silent, since no track is attached yet) so later playback of the bot track counts
+as user-activated. The `Console` block does this for you:
 
 ```tsx
 import { unlockBotAudio } from "@/components/pipecat/bot-audio";

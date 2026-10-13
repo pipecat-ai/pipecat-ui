@@ -68,22 +68,15 @@ let outputElement: HTMLAudioElement | null = null;
 
 /**
  * Call synchronously inside the user's gesture (the Connect tap) so iOS
- * Safari treats later playback of the bot track as user-activated. Plays the
- * mounted output element muted, then restores its muted state. No-op when
- * BotAudioOutput is not mounted. The rejection it swallows is expected on
- * desktop browsers, where no unlock is needed.
+ * Safari treats later playback of the bot track as user-activated. Calls
+ * play() on the mounted output element: with no source attached yet it makes
+ * no sound, and once the bot track is attached a repeated play() is a no-op,
+ * so overlapping calls are harmless. No-op when BotAudioOutput is not
+ * mounted. The call may stay pending until a source is attached (Chromium)
+ * or reject (no gesture); both are ignored.
  */
 export function unlockBotAudio(): void {
-  const el = outputElement;
-  if (!el) return;
-  const wasMuted = el.muted;
-  el.muted = true;
-  void el
-    .play()
-    .catch(() => undefined)
-    .finally(() => {
-      el.muted = wasMuted;
-    });
+  void outputElement?.play().catch(() => undefined);
 }
 
 /** Mount once inside PipecatClientProvider, in place of PipecatClientAudio, to use shared volume controls. */

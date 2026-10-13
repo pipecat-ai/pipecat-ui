@@ -198,31 +198,48 @@ describe("unlockBotAudio", () => {
     play.mockRestore();
   });
 
-  it("plays the mounted element muted and restores muted afterwards", async () => {
+  it("calls play() on the mounted element without touching muted", async () => {
     const { container, unmount } = render(<BotAudioOutput />);
     const audio = container.querySelector("audio")!;
     audio.muted = false;
-    let mutedDuringPlay: boolean | undefined;
-    const play = vi.spyOn(audio, "play").mockImplementation(function (
-      this: HTMLMediaElement,
-    ) {
-      mutedDuringPlay = this.muted;
-      return Promise.resolve();
-    });
+    const play = vi.spyOn(audio, "play").mockResolvedValue(undefined);
 
     unlockBotAudio();
     expect(play).toHaveBeenCalledTimes(1);
-    expect(mutedDuringPlay).toBe(true);
-    await waitFor(() => expect(audio.muted).toBe(false));
+    expect(audio.muted).toBe(false);
 
     play.mockImplementationOnce(() => Promise.reject(new Error("no gesture")));
-    unlockBotAudio();
-    await waitFor(() => expect(audio.muted).toBe(false));
+    expect(() => unlockBotAudio()).not.toThrow();
+    await Promise.resolve();
+    expect(audio.muted).toBe(false);
 
     unmount();
     play.mockClear();
     unlockBotAudio();
     expect(play).not.toHaveBeenCalled();
+    play.mockRestore();
+  });
+
+  it("leaves muted alone when two unlocks overlap on a source-less element", async () => {
+    const { container, unmount } = render(<BotAudioOutput />);
+    const audio = container.querySelector("audio")!;
+    audio.muted = false;
+    const resolvers: Array<() => void> = [];
+    const play = vi
+      .spyOn(audio, "play")
+      .mockImplementation(
+        () => new Promise<void>((resolve) => resolvers.push(resolve)),
+      );
+
+    unlockBotAudio();
+    unlockBotAudio();
+    expect(play).toHaveBeenCalledTimes(2);
+    expect(audio.muted).toBe(false);
+    resolvers.forEach((r) => r());
+    await Promise.resolve();
+    expect(audio.muted).toBe(false);
+
+    unmount();
     play.mockRestore();
   });
 });
