@@ -100,10 +100,11 @@ export function BotAudioOutput() {
       if (oldTrack && oldTrack.id === botAudioTrack.id) return;
     }
     el.srcObject = new MediaStream([botAudioTrack]);
-    // iOS Safari refuses autoPlay when the track arrives after the user's
-    // tap, leaving the page silent with no error. Start playback explicitly
-    // and log a rejection so it is visible. AbortError means the track was
-    // swapped or removed while play() was pending, not a real failure.
+    // autoPlay is enough once unlockBotAudio() ran inside the user's tap.
+    // This play() is a diagnostic: without the unlock, iOS Safari refuses
+    // autoPlay silently, and the logged rejection makes that visible.
+    // AbortError means the track was swapped or removed while play() was
+    // pending, not a real failure.
     void el.play().catch((err: unknown) => {
       if (isAbortError(err)) return;
       console.warn("BotAudioOutput: play() rejected", err);
