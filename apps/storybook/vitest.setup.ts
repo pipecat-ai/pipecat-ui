@@ -110,6 +110,9 @@ class StubAnalyserNode {
   getByteTimeDomainData(array: Uint8Array) {
     array.fill(128);
   }
+  getFloatTimeDomainData(array: Float32Array) {
+    array.fill(0);
+  }
   connect() {}
   disconnect() {}
 }

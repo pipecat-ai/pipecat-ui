@@ -60,6 +60,10 @@ import {
   AudioVisualizerWave,
   AudioVisualizerWaveView,
 } from "@/components/pipecat/audio-visualizer-wave";
+import {
+  DuplexTimelineLegend,
+  DuplexTimelineView,
+} from "@/components/pipecat/duplex-timeline";
 import { Metric } from "@/components/pipecat/metric";
 import { Console } from "@/components/pipecat/console/console";
 import { MetricsView } from "@/components/pipecat/metrics/metrics";
@@ -72,6 +76,7 @@ import { Button } from "@/components/ui/button";
 
 import { registerTransport } from "@/lib/transports";
 
+import { useDuplexDemo } from "../../../packages/registry/src/fixtures/duplex-demo";
 import { PipecatSandbox } from "./pipecat-sandbox";
 import {
   BooleanControl,
@@ -1458,6 +1463,104 @@ export function AudioVisualizerWavePreview() {
           {...sharedProps}
         />
         <VizStateButtons value={vizState} onChange={setVizState} />
+      </div>
+    </PreviewShell>
+  );
+}
+
+export function DuplexTimelinePreview() {
+  const [playing, setPlaying] = useState(false);
+  const demo = useDuplexDemo(playing);
+  const [agentLabel, setAgentLabel] = useState("agent");
+  const [userLabel, setUserLabel] = useState("you");
+  const [slowReplyMs, setSlowReplyMs] = useState(1000);
+  const [agentColor, setAgentColor] = useState("");
+  const [userColor, setUserColor] = useState("");
+  const [backchannelColor, setBackchannelColor] = useState("");
+  const [overlapColor, setOverlapColor] = useState("");
+
+  const colors = {
+    agentColor: agentColor || undefined,
+    userColor: userColor || undefined,
+    backchannelColor: backchannelColor || undefined,
+    overlapColor: overlapColor || undefined,
+  };
+
+  return (
+    <PreviewShell
+      tall
+      controls={
+        <>
+          <ControlSection title="Labels">
+            <TextControl
+              label="agentLabel"
+              value={agentLabel}
+              onChange={setAgentLabel}
+            />
+            <TextControl
+              label="userLabel"
+              value={userLabel}
+              onChange={setUserLabel}
+            />
+            <NumberControl
+              label="slowReplyMs"
+              value={slowReplyMs}
+              onChange={setSlowReplyMs}
+              min={200}
+              max={3000}
+              step={100}
+            />
+          </ControlSection>
+          <ControlSection title="Colors">
+            <ColorControl
+              label="agentColor"
+              value={agentColor}
+              onChange={setAgentColor}
+              placeholder="--agent-foreground"
+            />
+            <ColorControl
+              label="userColor"
+              value={userColor}
+              onChange={setUserColor}
+              placeholder="--client-foreground"
+            />
+            <ColorControl
+              label="backchannelColor"
+              value={backchannelColor}
+              onChange={setBackchannelColor}
+              placeholder="--muted-foreground"
+            />
+            <ColorControl
+              label="overlapColor"
+              value={overlapColor}
+              onChange={setOverlapColor}
+              placeholder="--inactive-background"
+            />
+          </ControlSection>
+        </>
+      }
+    >
+      <div className="flex w-full max-w-2xl min-w-0 flex-col gap-4">
+        <DuplexTimelineLegend
+          backchannelColor={colors.backchannelColor}
+          overlapColor={colors.overlapColor}
+        />
+        <DuplexTimelineView
+          {...demo}
+          {...colors}
+          running={playing}
+          agentLabel={agentLabel}
+          userLabel={userLabel}
+          slowReplyMs={slowReplyMs}
+        />
+        <Button
+          variant="outline"
+          size="sm"
+          className="self-start"
+          onClick={() => setPlaying((v) => !v)}
+        >
+          {playing ? "Stop" : "Play a conversation"}
+        </Button>
       </div>
     </PreviewShell>
   );
