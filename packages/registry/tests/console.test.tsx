@@ -120,6 +120,24 @@ describe("Console", () => {
     expect(screen.getByRole("button", { name: "Theme" })).toBeInTheDocument();
   });
 
+  it("unlocks bot audio inside the Connect tap, before connecting", async () => {
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, "play")
+      .mockResolvedValue(undefined);
+    const connect = vi.mocked(PipecatClient.prototype.connect);
+    const user = userEvent.setup();
+    await renderConsole(<Console />);
+    await user.click(
+      document.querySelector("[data-slot=connect-button]") as HTMLElement,
+    );
+    await waitFor(() => expect(connect).toHaveBeenCalled());
+    expect(play).toHaveBeenCalled();
+    expect(play.mock.invocationCallOrder[0]!).toBeLessThan(
+      connect.mock.invocationCallOrder[0]!,
+    );
+    play.mockRestore();
+  });
+
   it("shows the real session error and dismisses it", async () => {
     vi.spyOn(PipecatClient.prototype, "connect").mockRejectedValueOnce(
       new Error("bot exploded") as never,

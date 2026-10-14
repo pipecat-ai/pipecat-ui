@@ -9,6 +9,7 @@ import {
   BotAudioOutput,
   BotVolumeSlider,
   BotVolumeSliderView,
+  unlockBotAudio,
   useBotAudio,
 } from "@/components/pipecat/bot-audio";
 
@@ -60,6 +61,52 @@ describe("BotAudioOutput", () => {
     const stream = audio.srcObject as MediaStream;
     expect(stream).toBeInstanceOf(MediaStream);
     expect(stream.getAudioTracks()).toEqual([track]);
+  });
+
+  it("warns without throwing when play() is rejected", async () => {
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, "play")
+      .mockImplementation(() =>
+        Promise.reject(
+          Object.assign(new Error("denied"), { name: "NotAllowedError" }),
+        ),
+      );
+    hooks.usePipecatClientMediaTrack.mockReturnValue(fakeTrack("t1"));
+
+    expect(() => render(<BotAudioOutput />)).not.toThrow();
+    expect(play).toHaveBeenCalledTimes(1);
+    await waitFor(() =>
+      expect(consoleWarn).toHaveBeenCalledWith(
+        "BotAudioOutput: play() rejected",
+        expect.objectContaining({ name: "NotAllowedError" }),
+      ),
+    );
+    play.mockRestore();
+    consoleWarn.mockRestore();
+  });
+
+  it("stays quiet when play() is aborted by a track change", async () => {
+    const consoleWarn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, "play")
+      .mockImplementation(() =>
+        Promise.reject(
+          Object.assign(new Error("interrupted"), { name: "AbortError" }),
+        ),
+      );
+    hooks.usePipecatClientMediaTrack.mockReturnValue(fakeTrack("t1"));
+
+    render(<BotAudioOutput />);
+    expect(play).toHaveBeenCalledTimes(1);
+    // Let the rejection settle before asserting nothing was logged.
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(consoleWarn).not.toHaveBeenCalled();
+    play.mockRestore();
+    consoleWarn.mockRestore();
   });
 
   it("leaves srcObject unset while there is no bot track", () => {
@@ -140,6 +187,60 @@ describe("BotAudioOutput", () => {
     });
     await waitFor(() => expect(consoleWarn).toHaveBeenCalled());
     consoleWarn.mockRestore();
+  });
+});
+
+describe("unlockBotAudio", () => {
+  it("does nothing while no BotAudioOutput is mounted", () => {
+    const play = vi.spyOn(HTMLMediaElement.prototype, "play");
+    expect(() => unlockBotAudio()).not.toThrow();
+    expect(play).not.toHaveBeenCalled();
+    play.mockRestore();
+  });
+
+  it("calls play() on the mounted element without touching muted", async () => {
+    const { container, unmount } = render(<BotAudioOutput />);
+    const audio = container.querySelector("audio")!;
+    audio.muted = false;
+    const play = vi.spyOn(audio, "play").mockResolvedValue(undefined);
+
+    unlockBotAudio();
+    expect(play).toHaveBeenCalledTimes(1);
+    expect(audio.muted).toBe(false);
+
+    play.mockImplementationOnce(() => Promise.reject(new Error("no gesture")));
+    expect(() => unlockBotAudio()).not.toThrow();
+    await Promise.resolve();
+    expect(audio.muted).toBe(false);
+
+    unmount();
+    play.mockClear();
+    unlockBotAudio();
+    expect(play).not.toHaveBeenCalled();
+    play.mockRestore();
+  });
+
+  it("leaves muted alone when two unlocks overlap on a source-less element", async () => {
+    const { container, unmount } = render(<BotAudioOutput />);
+    const audio = container.querySelector("audio")!;
+    audio.muted = false;
+    const resolvers: Array<() => void> = [];
+    const play = vi
+      .spyOn(audio, "play")
+      .mockImplementation(
+        () => new Promise<void>((resolve) => resolvers.push(resolve)),
+      );
+
+    unlockBotAudio();
+    unlockBotAudio();
+    expect(play).toHaveBeenCalledTimes(2);
+    expect(audio.muted).toBe(false);
+    resolvers.forEach((r) => r());
+    await Promise.resolve();
+    expect(audio.muted).toBe(false);
+
+    unmount();
+    play.mockRestore();
   });
 });
 

@@ -30,7 +30,7 @@ import {
   type LayoutStorage,
 } from "react-resizable-panels";
 
-import { BotAudioOutput } from "@/components/pipecat/bot-audio";
+import { BotAudioOutput, unlockBotAudio } from "@/components/pipecat/bot-audio";
 import { ConnectButton } from "@/components/pipecat/connect-button";
 import { ConsoleBotAudioPanel } from "@/components/pipecat/console/bot-audio-panel";
 import { ConsoleBotVideoPanel } from "@/components/pipecat/console/bot-video-panel";
@@ -503,7 +503,10 @@ function ConsoleShell({
   const connectButton = (
     <ConnectButton
       size="sm"
-      onConnect={app.connect}
+      onConnect={() => {
+        unlockBotAudio();
+        void app.connect();
+      }}
       onDisconnect={app.disconnect}
     />
   );
