@@ -8,8 +8,13 @@ minimumReleaseAgeExclude:
   - "@types/node@26.1.2"
   - shadcn@4.16.0
   - "@fumadocs/base-ui@16.15.7"
-  - "@pipecat-ai/client-js@1.13.1"
-  - "@pipecat-ai/small-webrtc-transport@1.10.7"
+  - "@pipecat-ai/client-js@1.13.1 || 1.14.0"
+  - "@pipecat-ai/small-webrtc-transport@1.10.7 || 1.11.0"
   - eslint@10.10.0
   - fumadocs-core@16.15.7
   - lint-staged@17.5.0
+  - "@daily-co/daily-js@0.94.0"
+  - "@pipecat-ai/client-react@1.9.0"
+  - "@pipecat-ai/daily-transport@1.7.0"
+  - "@pipecat-ai/moq-transport@0.3.0"
+  - "@pipecat-ai/websocket-transport@1.8.0"
