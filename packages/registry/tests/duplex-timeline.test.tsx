@@ -11,6 +11,7 @@ import {
   DUPLEX_TIMELINE_INITIAL_STATE,
   reduceDuplexTimeline,
   type DuplexTimelineEvent,
+  type DuplexTimelineMarker,
   type DuplexTimelineState,
 } from "@/components/pipecat/duplex-timeline-markers";
 
@@ -219,10 +220,17 @@ describe("DuplexTimelineView", () => {
     expect(cancel).toHaveBeenCalled();
   });
 
-  it("lights a lane label while that side speaks", () => {
-    render(<DuplexTimelineView agentSpeaking userLabel="caller" />);
-    expect(screen.getByText("agent")).toHaveClass("text-foreground");
-    expect(screen.getByText("caller")).not.toHaveClass("text-foreground");
+  it("marks the speaking lane and passes lane label classes through", () => {
+    render(
+      <DuplexTimelineView
+        agentSpeaking
+        userLabel="caller"
+        laneLabelClassName="lane"
+      />,
+    );
+    expect(screen.getByText("agent")).toHaveAttribute("data-state", "speaking");
+    expect(screen.getByText("caller")).toHaveAttribute("data-state", "silent");
+    expect(screen.getByText("caller")).toHaveClass("lane");
   });
 
   it("releases each track's audio context when tracks change or unmount", () => {
@@ -240,6 +248,104 @@ describe("DuplexTimelineView", () => {
 
     unmount();
     expect(close).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe("DuplexTimelineView labels", () => {
+  // Frames draw once the canvas has a width, which arrives asynchronously.
+  const resizeCallbacks: ResizeObserverCallback[] = [];
+  const resize = (width: number) =>
+    act(() => {
+      // The setup's canvas stub returns undefined; lane masks need a gradient.
+      const gradient: CanvasGradient = { addColorStop() {} };
+      for (const canvas of document.querySelectorAll("canvas")) {
+        const context = canvas.getContext("2d");
+        if (context) {
+          vi.mocked(context.createLinearGradient).mockReturnValue(gradient);
+        }
+      }
+      const entries = [{ contentRect: { width } }] as ResizeObserverEntry[];
+      for (const callback of resizeCallbacks) {
+        callback(entries, {} as ResizeObserver);
+      }
+    });
+
+  beforeEach(() => {
+    resizeCallbacks.length = 0;
+    vi.stubGlobal(
+      "ResizeObserver",
+      class {
+        constructor(callback: ResizeObserverCallback) {
+          resizeCallbacks.push(callback);
+        }
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+      },
+    );
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  const markers = (): DuplexTimelineMarker[] => {
+    const now = performance.now();
+    return [
+      { id: 0, kind: "turn-end", at: now - 4000 },
+      { id: 1, kind: "reply", at: now - 2500, from: now - 4000 },
+      { id: 2, kind: "user-backchannel", at: now - 2000, text: "Mm-hmm." },
+    ];
+  };
+
+  it("draws backchannel and latency labels as classed spans", () => {
+    render(
+      <DuplexTimelineView
+        markers={markers()}
+        backchannelLabelClassName="backchannel"
+      />,
+    );
+    resize(600);
+    expect(screen.getByText("mm-hmm")).toHaveAttribute(
+      "data-slot",
+      "duplex-timeline-backchannel-label",
+    );
+    expect(screen.getByText("mm-hmm")).toHaveClass("backchannel");
+    expect(screen.getByText("1.5s")).toHaveAttribute("data-slow");
+  });
+
+  it("labels elapsed time since it started, every five seconds", () => {
+    const now = vi.spyOn(performance, "now").mockReturnValue(1000);
+    const { rerender } = render(<DuplexTimelineView running />);
+    resize(600);
+    now.mockReturnValue(13_000);
+    rerender(<DuplexTimelineView running={false} />);
+    expect(
+      [...document.querySelectorAll('[data-slot="duplex-timeline-time-label"]')]
+        .map((label) => label.textContent)
+        .sort(),
+    ).toEqual(["0:05", "0:10"]);
+  });
+
+  it.each([
+    ["noBackchannels", "mm-hmm"],
+    ["noSegmentLabels", "mm-hmm"],
+    ["noLatency", "1.5s"],
+    ["noTimeLabels", "0:00"],
+    ["noLaneLabels", "agent"],
+    ["noLegend", "handoff"],
+  ])("%s hides %s", (option, text) => {
+    render(<DuplexTimelineView markers={markers()} {...{ [option]: true }} />);
+    resize(600);
+    expect(screen.queryByText(text)).not.toBeInTheDocument();
+  });
+
+  it("removes its labels on unmount", () => {
+    const { unmount } = render(<DuplexTimelineView markers={markers()} />);
+    resize(600);
+    const latency = screen.getByText("1.5s");
+    unmount();
+    expect(latency.isConnected).toBe(false);
   });
 });
 
@@ -309,10 +415,13 @@ describe("DuplexTimeline", () => {
     ).toHaveAttribute("data-state", "idle");
 
     emit(RTVIEvent.UserStartedSpeaking);
-    expect(screen.getByText("caller")).toHaveClass("text-foreground");
+    expect(screen.getByText("caller")).toHaveAttribute(
+      "data-state",
+      "speaking",
+    );
     emit(RTVIEvent.UserStoppedSpeaking);
     emit(RTVIEvent.BotStartedSpeaking);
-    expect(screen.getByText("caller")).not.toHaveClass("text-foreground");
-    expect(screen.getByText("agent")).toHaveClass("text-foreground");
+    expect(screen.getByText("caller")).toHaveAttribute("data-state", "silent");
+    expect(screen.getByText("agent")).toHaveAttribute("data-state", "speaking");
   });
 });

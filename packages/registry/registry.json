@@ -161,7 +161,7 @@
           "inactive-background": "oklch(0.702 0.189 22.23)"
         }
       },
-      "docs": "Use DuplexTimeline inside a PipecatClientProvider; it reads both audio tracks, scrolls while the transport is ready, and marks backchannels from RTVI 2.2 bots. Use DuplexTimelineView with your own tracks and markers (useDuplexTimelineMarkers, or reduceDuplexTimeline from duplex-timeline-markers), and DuplexTimelineLegend for the color key.",
+      "docs": "Use DuplexTimeline inside a PipecatClientProvider; it reads both audio tracks, scrolls while the transport is ready, and marks backchannels from RTVI 2.2 bots. Use DuplexTimelineView with your own tracks and markers (useDuplexTimelineMarkers, or reduceDuplexTimeline from duplex-timeline-markers), and DuplexTimelineLegend to place the color key outside the timeline (with noLegend). Hide parts with the no* props (noBackchannels, noInterruptions, noLatency, noTimeLabels, noLegend…) and style labels with laneLabelClassName and the other *LabelClassName props.",
       "categories": ["voice"]
     },
     {

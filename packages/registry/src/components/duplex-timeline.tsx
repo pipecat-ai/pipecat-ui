@@ -36,6 +36,20 @@ const DEFAULT_COLORS = {
   grid: "--border",
 };
 
+/**
+ * Label defaults. Segment colors come through the root's custom properties
+ * so a label class name can override them.
+ */
+const LABEL_CLASSES = {
+  backchannel:
+    "text-[10px] leading-none text-(color:--duplex-timeline-backchannel)",
+  interruption:
+    "text-[10px] leading-none text-(color:--duplex-timeline-overlap)",
+  latency:
+    "text-[10px] leading-none data-slow:text-(color:--duplex-timeline-overlap)",
+  time: "text-[10px] leading-none opacity-50",
+};
+
 /** A color prop as CSS: "--token" names become var(--token). */
 function cssColor(color: string): string {
   return color.startsWith("--") ? `var(${color})` : color;
@@ -48,7 +62,7 @@ export interface DuplexTimelineViewProps {
   userTrack?: MediaStreamTrack | null;
   /** Turn markers in performance.now() time, e.g. from useDuplexTimelineMarkers. */
   markers?: readonly DuplexTimelineMarker[];
-  /** Scrolls while true and holds the last frame when false. Starting clears both lanes. */
+  /** Scrolls while true and holds the last frame when false. Starting clears both lanes and restarts the time axis. */
   running?: boolean;
   /** Lights the agent lane label. */
   agentSpeaking?: boolean;
@@ -68,12 +82,40 @@ export interface DuplexTimelineViewProps {
   gridColor?: string;
   /** Replies at least this slow, in ms, draw their latency in overlapColor. */
   slowReplyMs?: number;
+  /** Draw backchannels as speech, without labels. Markers still keep them off the handoffs. */
+  noBackchannels?: boolean;
+  /** Draw interruption overlaps as speech, without labels. */
+  noInterruptions?: boolean;
+  /** Hide the dashed rules at turn ends and replies. */
+  noHandoffs?: boolean;
+  /** Hide reply latency brackets. */
+  noLatency?: boolean;
+  /** Hide the lane labels; the canvas takes their width. */
+  noLaneLabels?: boolean;
+  /** Hide backchannel and interruption labels; their bars keep their colors. */
+  noSegmentLabels?: boolean;
+  /** Hide the elapsed-time labels under the lanes. */
+  noTimeLabels?: boolean;
+  /** Hide the color key above the lanes; DuplexTimelineLegend can place it elsewhere. */
+  noLegend?: boolean;
   className?: string;
+  /** Classes for the color key. */
+  legendClassName?: string;
+  /** Classes for each lane label, which carries data-lane and data-state="speaking" | "silent". */
+  laneLabelClassName?: string;
+  /** Classes for backchannel labels. */
+  backchannelLabelClassName?: string;
+  /** Classes for interruption labels. */
+  interruptionLabelClassName?: string;
+  /** Classes for latency labels; slow replies carry data-slow. */
+  latencyLabelClassName?: string;
+  /** Classes for the elapsed-time labels. */
+  timeLabelClassName?: string;
 }
 
 /**
- * Scrolling agent and user waveforms. Handoff rules, reply latency and
- * time labels use the element's text color.
+ * Scrolling agent and user waveforms. Handoff rules, latency and time labels
+ * use the element's text color. Labels over the canvas are DOM spans.
  */
 export const DuplexTimelineView = memo(function DuplexTimelineView({
   agentTrack = null,
@@ -90,16 +132,33 @@ export const DuplexTimelineView = memo(function DuplexTimelineView({
   overlapColor = DEFAULT_COLORS.overlap,
   gridColor = DEFAULT_COLORS.grid,
   slowReplyMs = 1000,
+  noBackchannels = false,
+  noInterruptions = false,
+  noHandoffs = false,
+  noLatency = false,
+  noLaneLabels = false,
+  noSegmentLabels = false,
+  noTimeLabels = false,
+  noLegend = false,
   className,
+  legendClassName,
+  laneLabelClassName,
+  backchannelLabelClassName,
+  interruptionLabelClassName,
+  latencyLabelClassName,
+  timeLabelClassName,
 }: DuplexTimelineViewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const labelsRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<DuplexTimelineRenderer | null>(null);
 
-  // The renderer owns the frame loop and audio; props are pushed into it.
+  // The renderer owns the frame loop, audio and label spans; props are
+  // pushed into it.
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    const renderer = createDuplexTimelineRenderer(canvas);
+    const labels = labelsRef.current;
+    if (!canvas || !labels) return;
+    const renderer = createDuplexTimelineRenderer(canvas, labels);
     rendererRef.current = renderer;
     return () => {
       renderer.dispose();
@@ -120,7 +179,6 @@ export const DuplexTimelineView = memo(function DuplexTimelineView({
         overlap: resolveVisualizerColor(overlapColor, canvas),
         grid: resolveVisualizerColor(gridColor, canvas),
         text: resolveVisualizerColor("currentColor", canvas),
-        font: getComputedStyle(canvas).fontFamily,
       });
     };
     apply();
@@ -139,6 +197,40 @@ export const DuplexTimelineView = memo(function DuplexTimelineView({
     className,
   ]);
 
+  // Before markers, so the first frame creates label spans with their classes.
+  useEffect(() => {
+    rendererRef.current?.setOptions({
+      slowReplyMs,
+      backchannels: !noBackchannels,
+      interruptions: !noInterruptions,
+      handoffs: !noHandoffs,
+      latency: !noLatency,
+      segmentLabels: !noSegmentLabels,
+      timeLabels: !noTimeLabels,
+      labelClassNames: {
+        backchannel: cn(LABEL_CLASSES.backchannel, backchannelLabelClassName),
+        interruption: cn(
+          LABEL_CLASSES.interruption,
+          interruptionLabelClassName,
+        ),
+        latency: cn(LABEL_CLASSES.latency, latencyLabelClassName),
+        time: cn(LABEL_CLASSES.time, timeLabelClassName),
+      },
+    });
+  }, [
+    slowReplyMs,
+    noBackchannels,
+    noInterruptions,
+    noHandoffs,
+    noLatency,
+    noSegmentLabels,
+    noTimeLabels,
+    backchannelLabelClassName,
+    interruptionLabelClassName,
+    latencyLabelClassName,
+    timeLabelClassName,
+  ]);
+
   useEffect(() => {
     rendererRef.current?.setTrack("agent", agentTrack);
   }, [agentTrack]);
@@ -150,10 +242,6 @@ export const DuplexTimelineView = memo(function DuplexTimelineView({
   useEffect(() => {
     rendererRef.current?.setMarkers(markers ?? []);
   }, [markers]);
-
-  useEffect(() => {
-    rendererRef.current?.setSlowReplyMs(slowReplyMs);
-  }, [slowReplyMs]);
 
   useEffect(() => {
     const renderer = rendererRef.current;
@@ -169,64 +257,105 @@ export const DuplexTimelineView = memo(function DuplexTimelineView({
       data-slot="duplex-timeline"
       data-state={running ? "live" : "idle"}
       className={cn(
-        "text-muted-foreground flex gap-3 font-mono text-[11px]",
+        "text-muted-foreground flex flex-col gap-4 font-mono text-[11px]",
         className,
       )}
+      style={
+        {
+          "--duplex-timeline-backchannel": cssColor(backchannelColor),
+          "--duplex-timeline-overlap": cssColor(overlapColor),
+        } as React.CSSProperties
+      }
     >
-      <div
-        className="flex shrink-0 flex-col"
-        style={{
-          paddingTop: agent.top,
-          rowGap: user.top - agent.top - agent.height,
-        }}
-      >
-        <LaneLabel
-          label={agentLabel}
-          color={agentColor}
-          speaking={agentSpeaking}
-          height={agent.height}
+      {!noLegend && (
+        <DuplexTimelineLegend
+          backchannelColor={backchannelColor}
+          overlapColor={overlapColor}
+          noBackchannels={noBackchannels}
+          noInterruptions={noInterruptions}
+          noHandoffs={noHandoffs}
+          className={legendClassName}
         />
-        <LaneLabel
-          label={userLabel}
-          color={userColor}
-          speaking={userSpeaking}
-          height={user.height}
-        />
+      )}
+      <div className="flex gap-3">
+        {!noLaneLabels && (
+          <div
+            className="flex shrink-0 flex-col"
+            style={{
+              paddingTop: agent.top,
+              rowGap: user.top - agent.top - agent.height,
+            }}
+          >
+            <LaneLabel
+              lane="agent"
+              label={agentLabel}
+              color={agentColor}
+              speaking={agentSpeaking}
+              height={agent.height}
+              className={laneLabelClassName}
+            />
+            <LaneLabel
+              lane="user"
+              label={userLabel}
+              color={userColor}
+              speaking={userSpeaking}
+              height={user.height}
+              className={laneLabelClassName}
+            />
+          </div>
+        )}
+        <div className="relative min-w-0 flex-1 [mask-image:linear-gradient(to_right,transparent,black_3rem)]">
+          <canvas
+            ref={canvasRef}
+            role="img"
+            aria-label={`${agentLabel} and ${userLabel} speech over time`}
+            className="block w-full"
+            style={{ height: DUPLEX_TIMELINE_HEIGHT }}
+          />
+          <div
+            ref={labelsRef}
+            aria-hidden
+            className="pointer-events-none absolute inset-0 overflow-hidden"
+          />
+        </div>
       </div>
-      <canvas
-        ref={canvasRef}
-        role="img"
-        aria-label={`${agentLabel} and ${userLabel} speech over time`}
-        className="block min-w-0 flex-1 [mask-image:linear-gradient(to_right,transparent,black_3rem)]"
-        style={{ height: DUPLEX_TIMELINE_HEIGHT }}
-      />
     </div>
   );
 });
 
 /** Lane name, lit while that side speaks. */
 function LaneLabel({
+  lane,
   label,
   color,
   speaking,
   height,
+  className,
 }: {
+  lane: "agent" | "user";
   label: string;
   color: string;
   speaking: boolean;
   height: number;
+  className?: string;
 }) {
   return (
-    <span className="flex items-center gap-1.5" style={{ height }}>
+    <span
+      data-slot="duplex-timeline-lane-label"
+      data-lane={lane}
+      data-state={speaking ? "speaking" : "silent"}
+      className={cn(
+        "group/lane data-[state=speaking]:text-foreground flex items-center gap-1.5",
+        className,
+      )}
+      style={{ height }}
+    >
       <span
         aria-hidden
-        className={cn(
-          "size-1.5 shrink-0 rounded-full transition-opacity duration-150 motion-reduce:transition-none",
-          speaking ? "opacity-100" : "opacity-35",
-        )}
+        className="size-1.5 shrink-0 rounded-full opacity-35 transition-opacity duration-150 group-data-[state=speaking]/lane:opacity-100 motion-reduce:transition-none"
         style={{ backgroundColor: cssColor(color) }}
       />
-      <span className={cn(speaking && "text-foreground")}>{label}</span>
+      {label}
     </span>
   );
 }
@@ -236,6 +365,10 @@ export interface DuplexTimelineLegendProps {
   backchannelColor?: string;
   /** Match the timeline's overlapColor. */
   overlapColor?: string;
+  /** Match the timeline's noBackchannels, noInterruptions and noHandoffs. */
+  noBackchannels?: boolean;
+  noInterruptions?: boolean;
+  noHandoffs?: boolean;
   className?: string;
 }
 
@@ -243,12 +376,15 @@ export interface DuplexTimelineLegendProps {
 export function DuplexTimelineLegend({
   backchannelColor = DEFAULT_COLORS.backchannel,
   overlapColor = DEFAULT_COLORS.overlap,
+  noBackchannels = false,
+  noInterruptions = false,
+  noHandoffs = false,
   className,
 }: DuplexTimelineLegendProps) {
   const swatches = [
-    { label: "backchannel", color: backchannelColor },
-    { label: "overlap", color: overlapColor },
-  ];
+    { label: "backchannel", color: backchannelColor, hidden: noBackchannels },
+    { label: "overlap", color: overlapColor, hidden: noInterruptions },
+  ].filter((swatch) => !swatch.hidden);
   return (
     <span
       data-slot="duplex-timeline-legend"
@@ -267,13 +403,15 @@ export function DuplexTimelineLegend({
           {label}
         </span>
       ))}
-      <span className="flex items-center gap-1.5">
-        <span
-          aria-hidden
-          className="h-2 w-px border-l border-dashed border-current"
-        />
-        handoff
-      </span>
+      {!noHandoffs && (
+        <span className="flex items-center gap-1.5">
+          <span
+            aria-hidden
+            className="h-2 w-px border-l border-dashed border-current"
+          />
+          handoff
+        </span>
+      )}
     </span>
   );
 }

@@ -13,21 +13,19 @@ storybook: "/storybook/?path=/story/components-duplextimeline--scripted"
 ## Usage
 
 ```tsx
-import {
-  DuplexTimeline,
-  DuplexTimelineLegend,
-} from "@/components/pipecat/duplex-timeline";
+import { DuplexTimeline } from "@/components/pipecat/duplex-timeline";
 
 // Connected: both participants' audio and RTVI turn events
-<DuplexTimelineLegend />
-<DuplexTimeline />
+<DuplexTimeline />;
 ```
 
 The agent lane sits over the user lane, both scrolling on one clock with now at the right
 edge. Bars take the lane's color for speech, `backchannelColor` for backchannels
 ("mm-hmm" from either side), and `overlapColor` where the user talked over the bot. A
 dashed rule marks the end of the user's turn and the start of the bot's reply, with the
-latency between them; replies slower than `slowReplyMs` draw it in `overlapColor`.
+latency between them; replies slower than `slowReplyMs` draw it in `overlapColor`. Ticks
+under the lanes count elapsed time from when the timeline started, labelled every five
+seconds, and scroll with the waveforms. A color key sits above the lanes.
 
 `DuplexTimeline` scrolls while the transport is `ready` and holds its last frame after
 the session ends. It builds its markers from RTVI turn events, and backchannels from
@@ -57,13 +55,43 @@ const { markers, agentSpeaking, userSpeaking } = useDuplexTimelineMarkers();
 Markers use `performance.now()` time. To drive the view from another event source, fold
 your events through `reduceDuplexTimeline` from `components/pipecat/duplex-timeline-markers`.
 
+### Showing less
+
+```tsx
+<DuplexTimeline noInterruptions noLatency noTimeLabels />
+```
+
+`noBackchannels` and `noInterruptions` draw those stretches as plain speech and drop their
+labels; backchannels still never count as handoffs. `noHandoffs` and `noLatency` remove the
+dashed rules and latency brackets. `noLaneLabels`, `noSegmentLabels`, and `noTimeLabels`
+hide the lane names, the backchannel and interruption labels, and the elapsed-time labels.
+The color key above the lanes follows these options; `noLegend` hides it. To place the key
+elsewhere, set `noLegend` and render `DuplexTimelineLegend` with the same colors and options.
+
+### Styling labels
+
+Labels are DOM spans over the canvas, so each kind takes a class name:
+
+```tsx
+<DuplexTimeline
+  laneLabelClassName="uppercase data-[state=speaking]:text-primary"
+  backchannelLabelClassName="italic"
+  latencyLabelClassName="font-semibold data-slow:text-destructive"
+  timeLabelClassName="opacity-30"
+/>
+```
+
+Lane labels carry `data-lane` and `data-state="speaking" | "silent"`; latency labels for
+slow replies carry `data-slow`. Backchannel and interruption labels default to
+`backchannelColor` and `overlapColor`, and a text color class replaces it.
+
 ## Key props
 
 | Prop                             | Type                       | Description                                                                          |
 | -------------------------------- | -------------------------- | ------------------------------------------------------------------------------------ |
 | `agentTrack` / `userTrack`       | `MediaStreamTrack \| null` | Audio for each lane (View); a lane stays flat when null                              |
 | `markers`                        | `DuplexTimelineMarker[]`   | Handoffs, interruptions, and backchannels (View)                                     |
-| `running`                        | `boolean`                  | Scrolls while true, holds the last frame when false; starting clears lanes           |
+| `running`                        | `boolean`                  | Scrolls while true, holds the last frame when false; starting clears lanes and time  |
 | `agentSpeaking` / `userSpeaking` | `boolean`                  | Lights the lane labels (View)                                                        |
 | `agentLabel` / `userLabel`       | `string`                   | Lane names (default `"agent"` and `"you"`)                                           |
 | `agentColor` / `userColor`       | `string`                   | Speech bars; default `--agent-foreground` and `--client-foreground`                  |
@@ -71,9 +99,21 @@ your events through `reduceDuplexTimeline` from `components/pipecat/duplex-timel
 | `overlapColor`                   | `string`                   | Overlap bars, interruption labels, and slow replies; default `--inactive-background` |
 | `gridColor`                      | `string`                   | Centre lines, second ticks, and the now edge; default `--border`                     |
 | `slowReplyMs`                    | `number`                   | Reply latency at or above this many ms draws in `overlapColor` (default 1000)        |
+| `noBackchannels`                 | `boolean`                  | Draw backchannels as speech, without labels                                          |
+| `noInterruptions`                | `boolean`                  | Draw interruption overlaps as speech, without labels                                 |
+| `noHandoffs` / `noLatency`       | `boolean`                  | Hide the handoff rules / reply latency brackets                                      |
+| `noLaneLabels`                   | `boolean`                  | Hide the lane names; the waveforms take their width                                  |
+| `noSegmentLabels`                | `boolean`                  | Hide backchannel and interruption labels; their bars keep their colors               |
+| `noTimeLabels`                   | `boolean`                  | Hide the elapsed-time labels                                                         |
+| `noLegend`                       | `boolean`                  | Hide the color key above the lanes                                                   |
+| `legendClassName`                | `string`                   | Classes for the color key                                                            |
+| `laneLabelClassName`             | `string`                   | Classes for each lane label                                                          |
+| `backchannelLabelClassName`      | `string`                   | Classes for backchannel labels                                                       |
+| `interruptionLabelClassName`     | `string`                   | Classes for interruption labels                                                      |
+| `latencyLabelClassName`          | `string`                   | Classes for latency labels                                                           |
+| `timeLabelClassName`             | `string`                   | Classes for the elapsed-time labels                                                  |
 
 Colors accept any CSS color, `currentColor`, or a `--css-var` name, and follow theme
 changes on `<html>`. Handoff rules, latency, and time labels use the element's text color.
-`DuplexTimelineLegend` takes the same `backchannelColor` and `overlapColor` to stay in
-step. Under `prefers-reduced-motion` the timeline redraws twice a second instead of every
+Under `prefers-reduced-motion` the timeline redraws twice a second instead of every
 frame.

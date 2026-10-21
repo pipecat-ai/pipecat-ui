@@ -1,10 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useEffect, useState } from "react";
 
-import {
-  DuplexTimelineLegend,
-  DuplexTimelineView,
-} from "@/components/pipecat/duplex-timeline";
+import { DuplexTimelineView } from "@/components/pipecat/duplex-timeline";
 
 import { useDuplexDemo } from "../fixtures/duplex-demo";
 
@@ -62,10 +59,6 @@ export const Scripted: Story = {
       const demo = useDuplexDemo(running);
       return (
         <div className="flex flex-col gap-4">
-          <DuplexTimelineLegend
-            backchannelColor={args.backchannelColor}
-            overlapColor={args.overlapColor}
-          />
           <DuplexTimelineView {...args} {...demo} running={running} />
           <button
             className="text-muted-foreground self-start font-mono text-xs underline"

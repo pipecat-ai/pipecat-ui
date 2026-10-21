@@ -2,16 +2,30 @@ import type { DuplexTimelineMarker } from "@/components/pipecat/duplex-timeline-
 import { createVisualizerAnalyser } from "@/lib/visualizer";
 
 export type DuplexTimelineLane = "agent" | "user";
+export type DuplexTimelineLabelKind =
+  "backchannel" | "interruption" | "latency" | "time";
 
-/** Resolved canvas colors and font; see DuplexTimelineView for meanings. */
+/** Resolved canvas colors; see DuplexTimelineView for meanings. */
 export interface DuplexTimelinePalette {
   agent: string;
   user: string;
   backchannel: string;
   overlap: string;
   grid: string;
+  /** Handoff rules and latency brackets. */
   text: string;
-  font: string;
+}
+
+/** What to draw; see DuplexTimelineView's no* props. */
+export interface DuplexTimelineOptions {
+  slowReplyMs: number;
+  backchannels: boolean;
+  interruptions: boolean;
+  handoffs: boolean;
+  latency: boolean;
+  segmentLabels: boolean;
+  timeLabels: boolean;
+  labelClassNames: Record<DuplexTimelineLabelKind, string>;
 }
 
 /** Scroll speed and bar geometry; one bar per slot of time. */
@@ -20,6 +34,14 @@ const BAR_WIDTH = 3;
 const BAR_GAP = 2;
 const SLOT_PX = BAR_WIDTH + BAR_GAP;
 const SLOT_MS = (SLOT_PX / PX_PER_SECOND) * 1000;
+/** Elapsed whole seconds as m:ss. */
+function formatElapsed(seconds: number) {
+  const minutes = Math.floor(seconds / 60);
+  return `${String(minutes)}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+/** A time's distance along the timeline in whole pixels. */
+const pixelsAt = (time: number) => Math.round((time / 1000) * PX_PER_SECOND);
 /** Slots kept per lane: more than the widest screen shows. */
 const SLOT_CAPACITY = 1024;
 
@@ -44,6 +66,14 @@ interface Segment {
   start: number;
   end: number;
   kind: "backchannel" | "overlap";
+}
+
+/** Names a segment, from its start. */
+interface SegmentLabel {
+  id: number;
+  kind: "backchannel" | "interruption";
+  text: string;
+  start: number;
 }
 
 /** Minimum level that draws a bar. */
@@ -117,11 +147,89 @@ class LevelHistory {
   }
 }
 
+interface LabelSpec {
+  key: string;
+  kind: DuplexTimelineLabelKind;
+  text: string;
+  /** Sets data-slow, for latency at or above slowReplyMs. */
+  slow?: boolean;
+}
+
+/**
+ * Labels as DOM spans over the canvas, so they take class names. A span
+ * lives while its key is shown each frame; its text and classes are fixed.
+ */
+class LabelLayer {
+  private readonly root: HTMLElement;
+  private readonly labels = new Map<
+    string,
+    { span: HTMLSpanElement; width: number }
+  >();
+  private readonly shown = new Set<string>();
+  classNames: Record<DuplexTimelineLabelKind, string> = {
+    backchannel: "",
+    interruption: "",
+    latency: "",
+    time: "",
+  };
+
+  constructor(root: HTMLElement) {
+    this.root = root;
+  }
+
+  private get({ key, kind, text, slow = false }: LabelSpec) {
+    let label = this.labels.get(key);
+    if (!label) {
+      const span = document.createElement("span");
+      span.dataset.slot = `duplex-timeline-${kind}-label`;
+      span.toggleAttribute("data-slow", slow);
+      span.className = this.classNames[kind];
+      span.style.cssText = "position:absolute;top:0;left:0;white-space:nowrap";
+      span.textContent = text;
+      this.root.append(span);
+      label = { span, width: span.getBoundingClientRect().width };
+      this.labels.set(key, label);
+    }
+    return label;
+  }
+
+  /** A label's width, measured when its span is created. */
+  measure(spec: LabelSpec): number {
+    return this.get(spec).width;
+  }
+
+  /** Places a label's top-left at x, y, raised by `lift` of its height. */
+  show(spec: LabelSpec, x: number, y: number, lift = 0) {
+    const { span } = this.get(spec);
+    span.style.transform = `translate(${String(x)}px, ${String(y)}px) translateY(${String(-lift * 100)}%)`;
+    this.shown.add(spec.key);
+  }
+
+  /** Starts a frame. */
+  begin() {
+    this.shown.clear();
+  }
+
+  /** Ends a frame, removing labels it didn't show. */
+  end() {
+    for (const [key, { span }] of this.labels) {
+      if (this.shown.has(key)) continue;
+      span.remove();
+      this.labels.delete(key);
+    }
+  }
+
+  clear() {
+    for (const { span } of this.labels.values()) span.remove();
+    this.labels.clear();
+  }
+}
+
 export interface DuplexTimelineRenderer {
   setTrack(lane: DuplexTimelineLane, track: MediaStreamTrack | null): void;
   setMarkers(markers: readonly DuplexTimelineMarker[]): void;
   setPalette(palette: DuplexTimelinePalette): void;
-  setSlowReplyMs(ms: number): void;
+  setOptions(options: DuplexTimelineOptions): void;
   /** Scrolls while running; holds the last frame when stopped. */
   setRunning(running: boolean): void;
   /** Clears both lanes' level history. */
@@ -132,10 +240,12 @@ export interface DuplexTimelineRenderer {
 /**
  * Two scrolling waveforms, agent over user, colored by what the audio was
  * (speech, backchannel, overlap), with handoff rules and reply latency.
- * Owns its frame loop; the caller feeds tracks, markers and colors.
+ * Owns its frame loop and the label spans in `labelRoot`; the caller feeds
+ * tracks, markers, colors and options.
  */
 export function createDuplexTimelineRenderer(
   canvas: HTMLCanvasElement,
+  labelRoot: HTMLElement,
 ): DuplexTimelineRenderer {
   const context2d = canvas.getContext("2d");
   if (!context2d) throw new Error("Canvas 2D is unavailable");
@@ -148,10 +258,18 @@ export function createDuplexTimelineRenderer(
     overlap: "black",
     grid: "gray",
     text: "gray",
-    font: "monospace",
   };
   let markers: readonly DuplexTimelineMarker[] = [];
-  let slowReplyMs = 1000;
+  let options: Omit<DuplexTimelineOptions, "labelClassNames"> = {
+    slowReplyMs: 1000,
+    backchannels: true,
+    interruptions: true,
+    handoffs: true,
+    latency: true,
+    segmentLabels: true,
+    timeLabels: true,
+  };
+  const labels = new LabelLayer(labelRoot);
   const meters: Record<DuplexTimelineLane, LevelMeter | null> = {
     agent: null,
     user: null,
@@ -165,6 +283,8 @@ export function createDuplexTimelineRenderer(
 
   let running = false;
   let frozenAt = performance.now();
+  /** Where the time axis counts from; reset() restarts it. */
+  let startedAt = frozenAt;
   let frame = 0;
   let lastDraw = -Infinity;
   let width = 0;
@@ -203,24 +323,29 @@ export function createDuplexTimelineRenderer(
     frame = requestAnimationFrame(tick);
   }
 
-  /** x of a time, with now at the right edge. */
+  /**
+   * x of a time, with now at the right edge. Times and the scroll snap to
+   * pixels separately, so bars, rules and labels all step on the same frame.
+   */
   function xAt(time: number, now: number) {
-    return width - ((now - time) / 1000) * PX_PER_SECOND;
+    return width - pixelsAt(now) + pixelsAt(time);
   }
 
   function draw(now: number) {
     ctx.clearRect(0, 0, width, DUPLEX_TIMELINE_HEIGHT);
-    if (width === 0) return;
-    const visible = markers.filter(
-      (marker) => xAt(markerEnd(marker, now), now) > -200,
-    );
-    const spans = segments(visible, now);
-
-    drawLane("agent", palette.agent, spans.agent, now);
-    drawLane("user", palette.user, spans.user, now);
-    drawGrid(now);
-    for (const marker of visible) drawHandoff(marker, now);
-    drawLabels(visible, now);
+    labels.begin();
+    if (width > 0) {
+      const visible = markers.filter(
+        (marker) => xAt(markerEnd(marker, now), now) > -200,
+      );
+      const spans = segments(visible, now);
+      drawLane("agent", palette.agent, spans.lanes.agent, now);
+      drawLane("user", palette.user, spans.lanes.user, now);
+      drawGrid(now);
+      for (const marker of visible) drawHandoff(marker, now);
+      if (options.segmentLabels) drawSegmentLabels(spans.labels, now);
+    }
+    labels.end();
   }
 
   function markerEnd(marker: DuplexTimelineMarker, now: number) {
@@ -262,9 +387,8 @@ export function createDuplexTimelineRenderer(
     start: number,
     end: number,
   ): [number, number] {
-    const newest = slotOf(performance.now());
     while (audible(lane, start - 1)) start--;
-    while (end < newest && audible(lane, end + 1)) end++;
+    while (audible(lane, end + 1)) end++;
     return [start * SLOT_MS, (end + 1) * SLOT_MS];
   }
 
@@ -314,52 +438,74 @@ export function createDuplexTimelineRenderer(
     };
   }
 
-  /** Non-speech stretches per lane: backchannels and overlaps. */
-  function segments(
-    visible: readonly DuplexTimelineMarker[],
-    now: number,
-  ): Record<DuplexTimelineLane, Segment[]> {
-    const spans: Record<DuplexTimelineLane, Segment[]> = {
+  /** Non-speech stretches per lane (backchannels and overlaps) and their labels. */
+  function segments(visible: readonly DuplexTimelineMarker[], now: number) {
+    const lanes: Record<DuplexTimelineLane, Segment[]> = {
       agent: [],
       user: [],
     };
+    const named: SegmentLabel[] = [];
     for (const marker of visible) {
-      if (marker.kind === "bot-backchannel") {
-        const [start, end] = botBackchannelSpan(marker, now);
-        spans.agent.push({ start, end, kind: "backchannel" });
-      } else if (marker.kind === "user-backchannel") {
-        const [start, end] = acknowledgmentSpan(marker);
-        spans.user.push({ start, end, kind: "backchannel" });
+      if (
+        marker.kind === "bot-backchannel" ||
+        marker.kind === "user-backchannel"
+      ) {
+        if (!options.backchannels) continue;
+        const [start, end] =
+          marker.kind === "bot-backchannel"
+            ? botBackchannelSpan(marker, now)
+            : acknowledgmentSpan(marker);
+        lanes[marker.kind === "bot-backchannel" ? "agent" : "user"].push({
+          start,
+          end,
+          kind: "backchannel",
+        });
+        named.push({
+          id: marker.id,
+          kind: "backchannel",
+          // "Mm-hmm." → "mm-hmm"
+          text: marker.text.replace(/[.!?,]+$/, "").toLowerCase(),
+          start,
+        });
       } else if (marker.kind === "interruption") {
+        if (!options.interruptions) continue;
         const overlap = overlapSpans(marker, now);
         if (!overlap) continue;
         for (const lane of ["agent", "user"] as const) {
           const [start, end] = overlap[lane];
-          spans[lane].push({ start, end, kind: "overlap" });
+          lanes[lane].push({ start, end, kind: "overlap" });
         }
+        named.push({
+          id: marker.id,
+          kind: "interruption",
+          text: "interruption",
+          start: overlap.user[0],
+        });
       }
     }
-    return spans;
+    return { lanes, labels: named };
   }
 
-  /** Second ticks, a label every five, and the now edge. */
+  /**
+   * Ticks every second since the start, labelled with the elapsed time every
+   * five, so each label scrolls with its tick. Then the now edge.
+   */
   function drawGrid(now: number) {
     ctx.fillStyle = palette.grid;
-    ctx.font = `10px ${palette.font}`;
-    ctx.textBaseline = "bottom";
-    const firstSecond = Math.ceil(
-      (now - (width / PX_PER_SECOND) * 1000) / 1000,
-    );
-    for (let second = firstSecond; second * 1000 <= now; second++) {
-      const x = Math.round(xAt(second * 1000, now));
-      const ago = Math.round(now / 1000 - second);
-      ctx.fillRect(x, LANES_BOTTOM + 3, 1, ago % 5 === 0 ? 4 : 2);
-      if (ago % 5 === 0 && ago > 0) {
-        ctx.fillStyle = palette.text;
-        ctx.globalAlpha = 0.5;
-        ctx.fillText(`-${String(ago)}s`, x + 3, DUPLEX_TIMELINE_HEIGHT);
-        ctx.globalAlpha = 1;
-        ctx.fillStyle = palette.grid;
+    const visibleMs = (width / PX_PER_SECOND) * 1000;
+    const first = Math.max(0, Math.ceil((now - startedAt - visibleMs) / 1000));
+    for (let second = first; startedAt + second * 1000 <= now; second++) {
+      const x = Math.round(xAt(startedAt + second * 1000, now));
+      const major = second % 5 === 0;
+      ctx.fillRect(x, LANES_BOTTOM + 3, 1, major ? 4 : 2);
+      if (options.timeLabels && major) {
+        const label = formatElapsed(second);
+        labels.show(
+          { key: `time:${label}`, kind: "time", text: label },
+          x + 3,
+          DUPLEX_TIMELINE_HEIGHT,
+          1,
+        );
       }
     }
     ctx.fillRect(width - 1, TOP - 2, 1, LANES_BOTTOM - TOP + 4);
@@ -438,31 +584,37 @@ export function createDuplexTimelineRenderer(
 
   /** Handoff rules, with the reply latency between them. */
   function drawHandoff(marker: DuplexTimelineMarker, now: number) {
-    if (marker.kind === "turn-end") dashedRule(xAt(marker.at, now));
-    if (marker.kind === "reply") {
-      const x = xAt(marker.at, now);
-      dashedRule(x);
-      drawLatency(xAt(marker.from, now), x, marker.at - marker.from);
+    if (marker.kind !== "turn-end" && marker.kind !== "reply") return;
+    const x = xAt(marker.at, now);
+    if (options.handoffs) dashedRule(x);
+    if (marker.kind === "reply" && options.latency) {
+      drawLatency(marker.id, xAt(marker.from, now), x, marker.at - marker.from);
     }
   }
 
   /** A bracket between the lanes, labelled with the gap. */
-  function drawLatency(from: number, to: number, ms: number) {
-    const y =
-      Math.round(DUPLEX_TIMELINE_LANES.agent.top + LANE_HEIGHT + LANE_GAP / 2) +
-      0.5;
-    const color = ms >= slowReplyMs ? palette.overlap : palette.text;
-    const text =
-      ms < 1000 ? `${String(Math.round(ms))}ms` : `${(ms / 1000).toFixed(1)}s`;
-    ctx.font = `10px ${palette.font}`;
-    ctx.textBaseline = "middle";
-    const textWidth = ctx.measureText(text).width;
+  function drawLatency(id: number, from: number, to: number, ms: number) {
+    const middle = Math.round(
+      DUPLEX_TIMELINE_LANES.agent.top + LANE_HEIGHT + LANE_GAP / 2,
+    );
+    const y = middle + 0.5;
+    const slow = ms >= options.slowReplyMs;
+    const label: LabelSpec = {
+      key: `latency:${String(id)}`,
+      kind: "latency",
+      text:
+        ms < 1000
+          ? `${String(Math.round(ms))}ms`
+          : `${(ms / 1000).toFixed(1)}s`,
+      slow,
+    };
+    const textWidth = labels.measure(label);
     // Too narrow for the text: print it after the reply rule.
     const inside = to - from > textWidth + 8;
     const x = inside ? (from + to) / 2 - textWidth / 2 : to + 4;
 
     // The line breaks around the text, so no background fill is needed.
-    ctx.strokeStyle = color;
+    ctx.strokeStyle = slow ? palette.overlap : palette.text;
     ctx.globalAlpha = 0.8;
     ctx.beginPath();
     ctx.moveTo(Math.round(from) + 0.5, y);
@@ -473,67 +625,21 @@ export function createDuplexTimelineRenderer(
     }
     ctx.stroke();
     ctx.globalAlpha = 1;
-
-    ctx.fillStyle = color;
-    ctx.fillText(text, x, y);
-  }
-
-  /** Short labels; the colors carry the rest. */
-  function labelFor(
-    marker: DuplexTimelineMarker,
-  ): { text: string; color: string } | null {
-    switch (marker.kind) {
-      case "interruption":
-        return { text: "interruption", color: palette.overlap };
-      case "bot-backchannel":
-      case "user-backchannel":
-        return {
-          // "Mm-hmm." → "mm-hmm"
-          text: marker.text.replace(/[.!?,]+$/, "").toLowerCase(),
-          color: palette.backchannel,
-        };
-      default:
-        return null;
-    }
-  }
-
-  /** A label's x: its segment's start, or null to skip. */
-  function labelStart(
-    marker: DuplexTimelineMarker,
-    now: number,
-  ): number | null {
-    switch (marker.kind) {
-      case "user-backchannel":
-        return acknowledgmentSpan(marker)[0];
-      case "bot-backchannel":
-        return botBackchannelSpan(marker, now)[0];
-      case "interruption":
-        return overlapSpans(marker, now)?.user[0] ?? null;
-      default:
-        return null;
-    }
+    labels.show(label, Math.round(x), middle, 0.5);
   }
 
   /** Labels above the lanes; a colliding label drops to the second row. */
-  function drawLabels(visible: readonly DuplexTimelineMarker[], now: number) {
-    ctx.font = `10px ${palette.font}`;
-    ctx.textBaseline = "top";
+  function drawSegmentLabels(named: SegmentLabel[], now: number) {
     const rowEnds = Array<number>(LABEL_ROWS).fill(-Infinity);
-    const placed = visible
-      .flatMap((marker) => {
-        const label = labelFor(marker);
-        const start = labelStart(marker, now);
-        return label && start !== null ? [{ label, start }] : [];
-      })
-      .sort((a, b) => a.start - b.start);
-    for (const { label, start } of placed) {
+    for (const { id, kind, text, start } of named.sort(
+      (a, b) => a.start - b.start,
+    )) {
       const x = Math.round(xAt(start, now));
-      const textWidth = ctx.measureText(label.text).width;
       const row = rowEnds.findIndex((end) => x > end + 8);
       if (row < 0) continue;
-      rowEnds[row] = x + textWidth;
-      ctx.fillStyle = label.color;
-      ctx.fillText(label.text, x, row * LABEL_ROW + 2);
+      const label: LabelSpec = { key: `${kind}:${String(id)}`, kind, text };
+      rowEnds[row] = x + labels.measure(label);
+      labels.show(label, x, row * LABEL_ROW + 2);
     }
   }
 
@@ -550,8 +656,11 @@ export function createDuplexTimelineRenderer(
       palette = next;
       redraw();
     },
-    setSlowReplyMs(ms) {
-      slowReplyMs = ms;
+    setOptions({ labelClassNames, ...next }) {
+      options = next;
+      // Spans keep the classes and data-slow they were created with.
+      labels.clear();
+      labels.classNames = labelClassNames;
       redraw();
     },
     setRunning(next) {
@@ -569,12 +678,13 @@ export function createDuplexTimelineRenderer(
     reset() {
       history.agent.clear();
       history.user.clear();
-      frozenAt = performance.now();
+      frozenAt = startedAt = performance.now();
       redraw();
     },
     dispose() {
       cancelAnimationFrame(frame);
       resize.disconnect();
+      labels.clear();
       meters.agent?.dispose();
       meters.user?.dispose();
       meters.agent = null;

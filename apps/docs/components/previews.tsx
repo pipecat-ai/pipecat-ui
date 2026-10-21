@@ -60,10 +60,7 @@ import {
   AudioVisualizerWave,
   AudioVisualizerWaveView,
 } from "@/components/pipecat/audio-visualizer-wave";
-import {
-  DuplexTimelineLegend,
-  DuplexTimelineView,
-} from "@/components/pipecat/duplex-timeline";
+import { DuplexTimelineView } from "@/components/pipecat/duplex-timeline";
 import { Metric } from "@/components/pipecat/metric";
 import { Console } from "@/components/pipecat/console/console";
 import { MetricsView } from "@/components/pipecat/metrics/metrics";
@@ -1468,6 +1465,17 @@ export function AudioVisualizerWavePreview() {
   );
 }
 
+const DUPLEX_TIMELINE_HIDE_OPTIONS = [
+  "noBackchannels",
+  "noInterruptions",
+  "noHandoffs",
+  "noLatency",
+  "noLaneLabels",
+  "noSegmentLabels",
+  "noTimeLabels",
+  "noLegend",
+] as const;
+
 export function DuplexTimelinePreview() {
   const [playing, setPlaying] = useState(false);
   const demo = useDuplexDemo(playing);
@@ -1478,6 +1486,9 @@ export function DuplexTimelinePreview() {
   const [userColor, setUserColor] = useState("");
   const [backchannelColor, setBackchannelColor] = useState("");
   const [overlapColor, setOverlapColor] = useState("");
+  const [hidden, setHidden] = useState<
+    Partial<Record<(typeof DUPLEX_TIMELINE_HIDE_OPTIONS)[number], boolean>>
+  >({});
 
   const colors = {
     agentColor: agentColor || undefined,
@@ -1537,17 +1548,26 @@ export function DuplexTimelinePreview() {
               placeholder="--inactive-background"
             />
           </ControlSection>
+          <ControlSection title="Hide">
+            {DUPLEX_TIMELINE_HIDE_OPTIONS.map((option) => (
+              <BooleanControl
+                key={option}
+                label={option}
+                checked={hidden[option] ?? false}
+                onCheckedChange={(checked) =>
+                  setHidden((current) => ({ ...current, [option]: checked }))
+                }
+              />
+            ))}
+          </ControlSection>
         </>
       }
     >
       <div className="flex w-full max-w-2xl min-w-0 flex-col gap-4">
-        <DuplexTimelineLegend
-          backchannelColor={colors.backchannelColor}
-          overlapColor={colors.overlapColor}
-        />
         <DuplexTimelineView
           {...demo}
           {...colors}
+          {...hidden}
           running={playing}
           agentLabel={agentLabel}
           userLabel={userLabel}
