@@ -21,9 +21,9 @@ import { DuplexTimeline } from "@/components/pipecat/duplex-timeline";
 
 The agent lane sits over the user lane, both scrolling on one clock with now at the right
 edge. Bars take the lane's color for speech, `backchannelColor` for backchannels
-("mm-hmm" from either side), and `overlapColor` where the user talked over the bot. A
-dashed rule marks the end of the user's turn and the start of the bot's reply, with the
-latency between them; replies slower than `slowReplyMs` draw it in `overlapColor`. Ticks
+("mm-hmm" from either side), and `interruptionColor` where the user talked over the bot.
+A dashed rule marks the end of the user's turn and the start of the bot's reply, with the
+latency between them; replies slower than `slowReplyMs` draw it in `slowReplyColor`. Ticks
 under the lanes count elapsed time from when the timeline started, labelled every five
 seconds, and scroll with the waveforms. A color key sits above the lanes.
 
@@ -33,6 +33,9 @@ the session ends. It builds its markers from RTVI turn events, and backchannels 
 which bots send from RTVI 2.2.0.
 
 ### Your own data
+
+`DuplexTimelineView` takes two tracks and a marker list. Inside a `PipecatClientProvider`,
+`useDuplexTimelineMarkers` builds the markers from RTVI events:
 
 ```tsx
 import {
@@ -52,8 +55,42 @@ const { markers, agentSpeaking, userSpeaking } = useDuplexTimelineMarkers();
 />;
 ```
 
-Markers use `performance.now()` time. To drive the view from another event source, fold
-your events through `reduceDuplexTimeline` from `components/pipecat/duplex-timeline-markers`.
+Without Pipecat, fold your own speech events through `reduceDuplexTimeline`, stamped with
+`performance.now()`:
+
+```tsx
+import { useReducer } from "react";
+import {
+  DUPLEX_TIMELINE_INITIAL_STATE,
+  reduceDuplexTimeline,
+} from "@/components/pipecat/duplex-timeline-markers";
+
+const [timeline, dispatch] = useReducer(
+  reduceDuplexTimeline,
+  DUPLEX_TIMELINE_INITIAL_STATE,
+);
+
+dispatch({ type: "user-stopped-speaking", now: performance.now() });
+dispatch({ type: "bot-started-speaking", now: performance.now() });
+dispatch({ type: "user-backchannel", text: "Mm-hmm.", now: performance.now() });
+
+<DuplexTimelineView
+  markers={timeline.markers}
+  agentSpeaking={timeline.botSpeaking}
+  userSpeaking={timeline.userSpeaking}
+  {...rest}
+/>;
+```
+
+The events are `connected`, `disconnected`, `user-started-speaking`, `user-stopped-speaking`,
+`bot-started-speaking`, `bot-stopped-speaking`, and `bot-backchannel` / `user-backchannel`
+with their `text`. User turn events mark turns only, so send a user backchannel on its own.
+A user turn announced just after the bot stops becomes a `possible-interruption` marker; the
+timeline draws it as an interruption only when the audio overlapped.
+
+Markers and waveform history belong to the components that hold them. If the timeline sits
+in a tab or drawer, mount `useDuplexTimelineMarkers` above it and pass the markers down so
+they survive closing it; the waveform starts again when the view remounts.
 
 ### Showing less
 
@@ -65,8 +102,8 @@ your events through `reduceDuplexTimeline` from `components/pipecat/duplex-timel
 labels; backchannels still never count as handoffs. `noHandoffs` and `noLatency` remove the
 dashed rules and latency brackets. `noLaneLabels`, `noSegmentLabels`, and `noTimeLabels`
 hide the lane names, the backchannel and interruption labels, and the elapsed-time labels.
-The color key above the lanes follows these options; `noLegend` hides it. To place the key
-elsewhere, set `noLegend` and render `DuplexTimelineLegend` with the same colors and options.
+The color key above the lanes follows these options; `noLegend` hides it. To place it
+elsewhere, set `noLegend` and spread the same options into `DuplexTimelineLegend`.
 
 ### Styling labels
 
@@ -82,36 +119,38 @@ Labels are DOM spans over the canvas, so each kind takes a class name:
 ```
 
 Lane labels carry `data-lane` and `data-state="speaking" | "silent"`; latency labels for
-slow replies carry `data-slow`. Backchannel and interruption labels default to
-`backchannelColor` and `overlapColor`, and a text color class replaces it.
+slow replies carry `data-slow`. Backchannel, interruption, and slow latency labels default
+to `backchannelColor`, `interruptionColor`, and `slowReplyColor`; a text color class
+replaces them.
 
 ## Key props
 
-| Prop                             | Type                       | Description                                                                          |
-| -------------------------------- | -------------------------- | ------------------------------------------------------------------------------------ |
-| `agentTrack` / `userTrack`       | `MediaStreamTrack \| null` | Audio for each lane (View); a lane stays flat when null                              |
-| `markers`                        | `DuplexTimelineMarker[]`   | Handoffs, interruptions, and backchannels (View)                                     |
-| `running`                        | `boolean`                  | Scrolls while true, holds the last frame when false; starting clears lanes and time  |
-| `agentSpeaking` / `userSpeaking` | `boolean`                  | Lights the lane labels (View)                                                        |
-| `agentLabel` / `userLabel`       | `string`                   | Lane names (default `"agent"` and `"you"`)                                           |
-| `agentColor` / `userColor`       | `string`                   | Speech bars; default `--agent-foreground` and `--client-foreground`                  |
-| `backchannelColor`               | `string`                   | Backchannel bars and labels; default `--muted-foreground`                            |
-| `overlapColor`                   | `string`                   | Overlap bars, interruption labels, and slow replies; default `--inactive-background` |
-| `gridColor`                      | `string`                   | Centre lines, second ticks, and the now edge; default `--border`                     |
-| `slowReplyMs`                    | `number`                   | Reply latency at or above this many ms draws in `overlapColor` (default 1000)        |
-| `noBackchannels`                 | `boolean`                  | Draw backchannels as speech, without labels                                          |
-| `noInterruptions`                | `boolean`                  | Draw interruption overlaps as speech, without labels                                 |
-| `noHandoffs` / `noLatency`       | `boolean`                  | Hide the handoff rules / reply latency brackets                                      |
-| `noLaneLabels`                   | `boolean`                  | Hide the lane names; the waveforms take their width                                  |
-| `noSegmentLabels`                | `boolean`                  | Hide backchannel and interruption labels; their bars keep their colors               |
-| `noTimeLabels`                   | `boolean`                  | Hide the elapsed-time labels                                                         |
-| `noLegend`                       | `boolean`                  | Hide the color key above the lanes                                                   |
-| `legendClassName`                | `string`                   | Classes for the color key                                                            |
-| `laneLabelClassName`             | `string`                   | Classes for each lane label                                                          |
-| `backchannelLabelClassName`      | `string`                   | Classes for backchannel labels                                                       |
-| `interruptionLabelClassName`     | `string`                   | Classes for interruption labels                                                      |
-| `latencyLabelClassName`          | `string`                   | Classes for latency labels                                                           |
-| `timeLabelClassName`             | `string`                   | Classes for the elapsed-time labels                                                  |
+| Prop                             | Type                       | Description                                                                         |
+| -------------------------------- | -------------------------- | ----------------------------------------------------------------------------------- |
+| `agentTrack` / `userTrack`       | `MediaStreamTrack \| null` | Audio for each lane (View); a lane stays flat when null                             |
+| `markers`                        | `DuplexTimelineMarker[]`   | Handoffs, interruptions, and backchannels (View)                                    |
+| `running`                        | `boolean`                  | Scrolls while true, holds the last frame when false; starting clears lanes and time |
+| `agentSpeaking` / `userSpeaking` | `boolean`                  | Lights the lane labels (View)                                                       |
+| `agentLabel` / `userLabel`       | `string`                   | Lane names (default `"agent"` and `"you"`)                                          |
+| `agentColor` / `userColor`       | `string`                   | Speech bars; default `--agent-foreground` and `--client-foreground`                 |
+| `backchannelColor`               | `string`                   | Backchannel bars and labels; default `--muted-foreground`                           |
+| `interruptionColor`              | `string`                   | Interruption bars and labels; default `--inactive-background`                       |
+| `slowReplyColor`                 | `string`                   | Latency of slow replies; default `interruptionColor`                                |
+| `gridColor`                      | `string`                   | Centre lines, second ticks, and the now edge; default `--border`                    |
+| `slowReplyMs`                    | `number`                   | Reply latency at or above this many ms draws in `slowReplyColor` (default 1000)     |
+| `noBackchannels`                 | `boolean`                  | Draw backchannels as speech, without labels                                         |
+| `noInterruptions`                | `boolean`                  | Draw interruptions as speech, without labels                                        |
+| `noHandoffs` / `noLatency`       | `boolean`                  | Hide the handoff rules / reply latency brackets                                     |
+| `noLaneLabels`                   | `boolean`                  | Hide the lane names; the waveforms take their width                                 |
+| `noSegmentLabels`                | `boolean`                  | Hide backchannel and interruption labels; their bars keep their colors              |
+| `noTimeLabels`                   | `boolean`                  | Hide the elapsed-time labels                                                        |
+| `noLegend`                       | `boolean`                  | Hide the color key above the lanes                                                  |
+| `legendClassName`                | `string`                   | Classes for the color key                                                           |
+| `laneLabelClassName`             | `string`                   | Classes for each lane label                                                         |
+| `backchannelLabelClassName`      | `string`                   | Classes for backchannel labels                                                      |
+| `interruptionLabelClassName`     | `string`                   | Classes for interruption labels                                                     |
+| `latencyLabelClassName`          | `string`                   | Classes for latency labels                                                          |
+| `timeLabelClassName`             | `string`                   | Classes for the elapsed-time labels                                                 |
 
 Colors accept any CSS color, `currentColor`, or a `--css-var` name, and follow theme
 changes on `<html>`. Handoff rules, latency, and time labels use the element's text color.

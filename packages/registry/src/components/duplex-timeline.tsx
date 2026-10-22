@@ -10,11 +10,18 @@ import {
   usePipecatClientTransportState,
   useRTVIClientEvent,
 } from "@pipecat-ai/client-react";
-import { memo, useEffect, useReducer, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useReducer,
+  useRef,
+  type Dispatch,
+} from "react";
 
 import {
   DUPLEX_TIMELINE_INITIAL_STATE,
   reduceDuplexTimeline,
+  type DuplexTimelineEvent,
   type DuplexTimelineMarker,
 } from "@/components/pipecat/duplex-timeline-markers";
 import {
@@ -32,7 +39,7 @@ const DEFAULT_COLORS = {
   agent: "--agent-foreground",
   user: "--client-foreground",
   backchannel: "--muted-foreground",
-  overlap: "--inactive-background",
+  interruption: "--inactive-background",
   grid: "--border",
 };
 
@@ -44,15 +51,24 @@ const LABEL_CLASSES = {
   backchannel:
     "text-[10px] leading-none text-(color:--duplex-timeline-backchannel)",
   interruption:
-    "text-[10px] leading-none text-(color:--duplex-timeline-overlap)",
+    "text-[10px] leading-none text-(color:--duplex-timeline-interruption)",
   latency:
-    "text-[10px] leading-none data-slow:text-(color:--duplex-timeline-overlap)",
+    "text-[10px] leading-none data-slow:text-(color:--duplex-timeline-slow-reply)",
   time: "text-[10px] leading-none opacity-50",
 };
 
 /** A color prop as CSS: "--token" names become var(--token). */
 function cssColor(color: string): string {
   return color.startsWith("--") ? `var(${color})` : color;
+}
+
+/**
+ * A color prop for the canvas. Tokens resolve on the canvas itself, so an
+ * override scoped to the timeline reaches the bars as well as the DOM parts.
+ */
+function canvasColor(color: string, canvas: HTMLCanvasElement): string {
+  if (!color.startsWith("--")) return resolveVisualizerColor(color, canvas);
+  return getComputedStyle(canvas).getPropertyValue(color).trim() || "black";
 }
 
 export interface DuplexTimelineViewProps {
@@ -76,15 +92,17 @@ export interface DuplexTimelineViewProps {
   userColor?: string;
   /** Backchannel bars and labels. */
   backchannelColor?: string;
-  /** Interruption overlap bars and labels, and slow reply latency. */
-  overlapColor?: string;
+  /** Interruption bars and labels. */
+  interruptionColor?: string;
+  /** Latency of replies at or above slowReplyMs; defaults to interruptionColor. */
+  slowReplyColor?: string;
   /** Centre lines, second ticks and the now edge. */
   gridColor?: string;
-  /** Replies at least this slow, in ms, draw their latency in overlapColor. */
+  /** Replies at least this slow, in ms, draw their latency in slowReplyColor. */
   slowReplyMs?: number;
   /** Draw backchannels as speech, without labels. Markers still keep them off the handoffs. */
   noBackchannels?: boolean;
-  /** Draw interruption overlaps as speech, without labels. */
+  /** Draw interruptions as speech, without labels. */
   noInterruptions?: boolean;
   /** Hide the dashed rules at turn ends and replies. */
   noHandoffs?: boolean;
@@ -117,7 +135,7 @@ export interface DuplexTimelineViewProps {
  * Scrolling agent and user waveforms. Handoff rules, latency and time labels
  * use the element's text color. Labels over the canvas are DOM spans.
  */
-export const DuplexTimelineView = memo(function DuplexTimelineView({
+export function DuplexTimelineView({
   agentTrack = null,
   userTrack = null,
   markers,
@@ -129,7 +147,8 @@ export const DuplexTimelineView = memo(function DuplexTimelineView({
   agentColor = DEFAULT_COLORS.agent,
   userColor = DEFAULT_COLORS.user,
   backchannelColor = DEFAULT_COLORS.backchannel,
-  overlapColor = DEFAULT_COLORS.overlap,
+  interruptionColor = DEFAULT_COLORS.interruption,
+  slowReplyColor = interruptionColor,
   gridColor = DEFAULT_COLORS.grid,
   slowReplyMs = 1000,
   noBackchannels = false,
@@ -166,19 +185,20 @@ export const DuplexTimelineView = memo(function DuplexTimelineView({
     };
   }, []);
 
-  // Resolve colors now and whenever the document's theme changes. className
-  // is a dependency because it can change what currentColor resolves to.
+  // Resolve colors now and whenever the theme changes, on <html> or with the
+  // OS. className is a dependency because it can change what they resolve to.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const apply = () => {
       rendererRef.current?.setPalette({
-        agent: resolveVisualizerColor(agentColor, canvas),
-        user: resolveVisualizerColor(userColor, canvas),
-        backchannel: resolveVisualizerColor(backchannelColor, canvas),
-        overlap: resolveVisualizerColor(overlapColor, canvas),
-        grid: resolveVisualizerColor(gridColor, canvas),
-        text: resolveVisualizerColor("currentColor", canvas),
+        agent: canvasColor(agentColor, canvas),
+        user: canvasColor(userColor, canvas),
+        backchannel: canvasColor(backchannelColor, canvas),
+        interruption: canvasColor(interruptionColor, canvas),
+        slowReply: canvasColor(slowReplyColor, canvas),
+        grid: canvasColor(gridColor, canvas),
+        text: canvasColor("currentColor", canvas),
       });
     };
     apply();
@@ -187,12 +207,18 @@ export const DuplexTimelineView = memo(function DuplexTimelineView({
       attributes: true,
       attributeFilter: ["class", "style", "data-theme"],
     });
-    return () => observer.disconnect();
+    const scheme = matchMedia("(prefers-color-scheme: dark)");
+    scheme.addEventListener("change", apply);
+    return () => {
+      observer.disconnect();
+      scheme.removeEventListener("change", apply);
+    };
   }, [
     agentColor,
     userColor,
     backchannelColor,
-    overlapColor,
+    interruptionColor,
+    slowReplyColor,
     gridColor,
     className,
   ]);
@@ -263,14 +289,15 @@ export const DuplexTimelineView = memo(function DuplexTimelineView({
       style={
         {
           "--duplex-timeline-backchannel": cssColor(backchannelColor),
-          "--duplex-timeline-overlap": cssColor(overlapColor),
+          "--duplex-timeline-interruption": cssColor(interruptionColor),
+          "--duplex-timeline-slow-reply": cssColor(slowReplyColor),
         } as React.CSSProperties
       }
     >
       {!noLegend && (
         <DuplexTimelineLegend
           backchannelColor={backchannelColor}
-          overlapColor={overlapColor}
+          interruptionColor={interruptionColor}
           noBackchannels={noBackchannels}
           noInterruptions={noInterruptions}
           noHandoffs={noHandoffs}
@@ -321,7 +348,7 @@ export const DuplexTimelineView = memo(function DuplexTimelineView({
       </div>
     </div>
   );
-});
+}
 
 /** Lane name, lit while that side speaks. */
 function LaneLabel({
@@ -360,22 +387,20 @@ function LaneLabel({
   );
 }
 
-export interface DuplexTimelineLegendProps {
-  /** Match the timeline's backchannelColor. */
-  backchannelColor?: string;
-  /** Match the timeline's overlapColor. */
-  overlapColor?: string;
-  /** Match the timeline's noBackchannels, noInterruptions and noHandoffs. */
-  noBackchannels?: boolean;
-  noInterruptions?: boolean;
-  noHandoffs?: boolean;
-  className?: string;
-}
+/** The timeline's colors and no* props, so one options object can feed both. */
+export type DuplexTimelineLegendProps = Pick<
+  DuplexTimelineViewProps,
+  | "backchannelColor"
+  | "interruptionColor"
+  | "noBackchannels"
+  | "noInterruptions"
+  | "noHandoffs"
+> & { className?: string };
 
 /** Key for the colors and rules the lane labels don't explain. */
 export function DuplexTimelineLegend({
   backchannelColor = DEFAULT_COLORS.backchannel,
-  overlapColor = DEFAULT_COLORS.overlap,
+  interruptionColor = DEFAULT_COLORS.interruption,
   noBackchannels = false,
   noInterruptions = false,
   noHandoffs = false,
@@ -383,7 +408,11 @@ export function DuplexTimelineLegend({
 }: DuplexTimelineLegendProps) {
   const swatches = [
     { label: "backchannel", color: backchannelColor, hidden: noBackchannels },
-    { label: "overlap", color: overlapColor, hidden: noInterruptions },
+    {
+      label: "interruption",
+      color: interruptionColor,
+      hidden: noInterruptions,
+    },
   ].filter((swatch) => !swatch.hidden);
   return (
     <span
@@ -416,6 +445,24 @@ export function DuplexTimelineLegend({
   );
 }
 
+type TurnEventType = Exclude<
+  DuplexTimelineEvent["type"],
+  "bot-backchannel" | "user-backchannel"
+>;
+
+/** Forwards an RTVI turn event, stamped on arrival, with a stable handler. */
+function useTurnEvent(
+  event: RTVIEvent,
+  type: TurnEventType,
+  dispatch: Dispatch<DuplexTimelineEvent>,
+) {
+  const handler = useCallback(
+    () => dispatch({ type, now: performance.now() }),
+    [dispatch, type],
+  );
+  useRTVIClientEvent(event, handler);
+}
+
 /**
  * Turn markers and speaking state from RTVI turn and backchannel events.
  * Requires PipecatClientProvider and an RTVI 2.2 bot for backchannels.
@@ -425,37 +472,44 @@ export function useDuplexTimelineMarkers() {
     reduceDuplexTimeline,
     DUPLEX_TIMELINE_INITIAL_STATE,
   );
-  const now = () => performance.now();
 
-  useRTVIClientEvent(RTVIEvent.Connected, () =>
-    dispatch({ type: "connected", now: now() }),
+  useTurnEvent(RTVIEvent.Connected, "connected", dispatch);
+  useTurnEvent(RTVIEvent.Disconnected, "disconnected", dispatch);
+  useTurnEvent(
+    RTVIEvent.UserStartedSpeaking,
+    "user-started-speaking",
+    dispatch,
   );
-  useRTVIClientEvent(RTVIEvent.Disconnected, () =>
-    dispatch({ type: "disconnected", now: now() }),
+  useTurnEvent(
+    RTVIEvent.UserStoppedSpeaking,
+    "user-stopped-speaking",
+    dispatch,
   );
-  useRTVIClientEvent(RTVIEvent.UserStartedSpeaking, () =>
-    dispatch({ type: "user-started-speaking", now: now() }),
-  );
-  useRTVIClientEvent(RTVIEvent.UserStoppedSpeaking, () =>
-    dispatch({ type: "user-stopped-speaking", now: now() }),
-  );
-  useRTVIClientEvent(RTVIEvent.BotStartedSpeaking, () =>
-    dispatch({ type: "bot-started-speaking", now: now() }),
-  );
-  useRTVIClientEvent(RTVIEvent.BotStoppedSpeaking, () =>
-    dispatch({ type: "bot-stopped-speaking", now: now() }),
-  );
-  useRTVIClientEvent(RTVIEvent.BotOutput, (data: BotOutputData) => {
+  useTurnEvent(RTVIEvent.BotStartedSpeaking, "bot-started-speaking", dispatch);
+  useTurnEvent(RTVIEvent.BotStoppedSpeaking, "bot-stopped-speaking", dispatch);
+
+  const onBotOutput = useCallback((data: BotOutputData) => {
     // Only a backchannel's first event carries its text; the rest report
     // how much has been spoken.
     if (data.text_type !== "backchannel") return;
     if (data.spoken_status && data.spoken_status !== "new") return;
-    dispatch({ type: "bot-backchannel", text: data.text.trim(), now: now() });
-  });
-  useRTVIClientEvent(RTVIEvent.UserInput, (data: UserInputData) => {
+    dispatch({
+      type: "bot-backchannel",
+      text: data.text.trim(),
+      now: performance.now(),
+    });
+  }, []);
+  useRTVIClientEvent(RTVIEvent.BotOutput, onBotOutput);
+
+  const onUserInput = useCallback((data: UserInputData) => {
     if (data.input_type !== "backchannel") return;
-    dispatch({ type: "user-backchannel", text: data.text.trim(), now: now() });
-  });
+    dispatch({
+      type: "user-backchannel",
+      text: data.text.trim(),
+      now: performance.now(),
+    });
+  }, []);
+  useRTVIClientEvent(RTVIEvent.UserInput, onUserInput);
 
   return {
     markers: state.markers,

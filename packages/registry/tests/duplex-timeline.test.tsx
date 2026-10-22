@@ -14,6 +14,7 @@ import {
   type DuplexTimelineMarker,
   type DuplexTimelineState,
 } from "@/components/pipecat/duplex-timeline-markers";
+import { DUPLEX_TIMELINE_HISTORY_MS } from "@/components/pipecat/duplex-timeline-renderer";
 
 const hooks = vi.hoisted(() => ({
   usePipecatClientMediaTrack: vi.fn(),
@@ -101,7 +102,7 @@ describe("reduceDuplexTimeline", () => {
     expect(state.replyEndedAt).toBeNull();
   });
 
-  it("treats a turn just after a reply ends as a late interruption", () => {
+  it("marks a turn just after a reply ends as a possible interruption", () => {
     const late = play(
       turn("user-stopped-speaking", 0),
       turn("bot-started-speaking", 500),
@@ -109,7 +110,7 @@ describe("reduceDuplexTimeline", () => {
       turn("user-started-speaking", 4000),
     );
     expect(late.markers.at(-1)).toMatchObject({
-      kind: "interruption",
+      kind: "possible-interruption",
       cutAt: 3000,
     });
 
@@ -119,7 +120,7 @@ describe("reduceDuplexTimeline", () => {
       turn("bot-stopped-speaking", 3000),
       turn("user-started-speaking", 5000),
     );
-    expect(fresh.markers.some((m) => m.kind === "interruption")).toBe(false);
+    expect(fresh.markers.at(-1)?.kind).toBe("reply");
   });
 
   it("keeps a bot backchannel inside the user's turn off the handoffs", () => {
@@ -154,28 +155,92 @@ describe("reduceDuplexTimeline", () => {
     expect(state.botReplying).toBe(false);
   });
 
-  it("drops a recent interruption that turned out to be a user backchannel", () => {
+  it("undoes only the reply opened by the bot's current speech", () => {
+    const state = play(
+      turn("user-stopped-speaking", 0),
+      turn("bot-started-speaking", 100),
+      turn("bot-stopped-speaking", 400),
+      turn("user-started-speaking", 600),
+      turn("bot-started-speaking", 800),
+      said("bot-backchannel", 810, "Mm-hmm."),
+    );
+    expect(state.markers).toContainEqual(
+      expect.objectContaining({ kind: "reply", at: 100, from: 0 }),
+    );
+    expect(state.userStoppedAt).toBeNull();
+  });
+
+  it("doesn't count talking over a bot backchannel as an interruption", () => {
+    const state = play(
+      turn("bot-started-speaking", 0),
+      said("bot-backchannel", 10, "Right."),
+      turn("user-started-speaking", 300),
+    );
+    expect(state.markers.map((m) => m.kind)).toEqual(["bot-backchannel"]);
+  });
+
+  it("records a user backchannel without touching the bot's turn", () => {
     const state = play(
       turn("user-stopped-speaking", 0),
       turn("bot-started-speaking", 500),
-      turn("user-started-speaking", 2000),
-      said("user-backchannel", 2600, "Yeah."),
+      said("user-backchannel", 1800, "Mm-hmm."),
     );
     expect(state.markers.map((m) => m.kind)).toEqual([
       "turn-end",
       "reply",
       "user-backchannel",
     ]);
-    expect(state.interrupted).toBe(false);
+    expect(state.botReplying).toBe(true);
   });
 
-  it("prunes markers that have scrolled off", () => {
+  it("keeps an earlier interruption when a user backchannel follows", () => {
     const state = play(
       turn("user-stopped-speaking", 0),
-      turn("user-stopped-speaking", 121_000),
+      turn("bot-started-speaking", 500),
+      turn("user-started-speaking", 2000),
+      turn("bot-stopped-speaking", 2300),
+      turn("user-stopped-speaking", 3000),
+      turn("bot-started-speaking", 3500),
+      said("user-backchannel", 4500, "ok"),
+    );
+    expect(state.markers).toContainEqual(
+      expect.objectContaining({ kind: "interruption", at: 2000, cutAt: 2300 }),
+    );
+  });
+
+  it("closes open markers on disconnect", () => {
+    const state = play(
+      turn("user-stopped-speaking", 0),
+      turn("bot-started-speaking", 500),
+      turn("user-started-speaking", 1000),
+      turn("disconnected", 1200),
+    );
+    expect(state.markers.at(-1)).toMatchObject({
+      kind: "interruption",
+      cutAt: 1200,
+    });
+  });
+
+  it("keeps the same markers when the bot stops with nothing open", () => {
+    const speaking = play(
+      turn("user-stopped-speaking", 0),
+      turn("bot-started-speaking", 500),
+    );
+    const stopped = reduceDuplexTimeline(speaking, {
+      type: "bot-stopped-speaking",
+      now: 900,
+    });
+    expect(stopped.markers).toBe(speaking.markers);
+  });
+
+  it("prunes markers older than the level history", () => {
+    const later = DUPLEX_TIMELINE_HISTORY_MS + 1000;
+    const state = play(
+      turn("user-stopped-speaking", 0),
+      turn("user-stopped-speaking", later),
     );
     expect(state.markers).toHaveLength(1);
-    expect(state.markers[0]?.at).toBe(121_000);
+    expect(state.markers[0]?.at).toBe(later);
   });
 
   it("starts over on connect but keeps ids unique", () => {
@@ -350,6 +415,26 @@ describe("DuplexTimelineView labels", () => {
 });
 
 describe("useDuplexTimelineMarkers", () => {
+  it("keeps its RTVI subscriptions across events", () => {
+    const seen = new Map<string, Set<unknown>>();
+    hooks.useRTVIClientEvent.mockImplementation(
+      (event: RTVIEvent, handler: (payload?: unknown) => void) => {
+        eventHandlers.set(String(event), handler);
+        seen.set(
+          String(event),
+          (seen.get(String(event)) ?? new Set()).add(handler),
+        );
+      },
+    );
+    renderHook(() => useDuplexTimelineMarkers());
+    emit(RTVIEvent.UserStartedSpeaking);
+    emit(RTVIEvent.BotStartedSpeaking);
+    emit(RTVIEvent.UserInput, { text: "ok", input_type: "backchannel" });
+    expect([...seen.values()].map((handlers) => handlers.size)).toEqual(
+      Array<number>(seen.size).fill(1),
+    );
+  });
+
   it("records a bot backchannel once, from its first bot-output", () => {
     const { result } = renderHook(() => useDuplexTimelineMarkers());
     emit(RTVIEvent.UserStartedSpeaking);

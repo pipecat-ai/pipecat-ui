@@ -1,14 +1,29 @@
+import { DUPLEX_TIMELINE_HISTORY_MS } from "@/components/pipecat/duplex-timeline-renderer";
+
 /** A moment on the duplex timeline. Times are performance.now() ms. */
 export type DuplexTimelineMarker =
   | { id: number; kind: "turn-end"; at: number }
   | { id: number; kind: "reply"; at: number; from: number }
   | {
       id: number;
+      /** The user's turn started while the bot was replying. */
       kind: "interruption";
       /** The user's turn was announced. */
       at: number;
       /** The bot stopped, or null while it's still talking. */
       cutAt: number | null;
+    }
+  | {
+      id: number;
+      /**
+       * The user's turn was announced just after the bot stopped. The server
+       * may have held the turn while classifying it, so only the audio shows
+       * whether the two overlapped; the timeline draws it as an interruption
+       * when they did.
+       */
+      kind: "possible-interruption";
+      at: number;
+      cutAt: number;
     }
   | {
       id: number;
@@ -40,6 +55,8 @@ export interface DuplexTimelineState {
   botSpeaking: boolean;
   /** The bot holds the floor (not backchannelling). */
   botReplying: boolean;
+  /** The reply marker opened by the bot's current speech. */
+  replyId: number | null;
   /** The bot's last reply ended uninterrupted. */
   replyEndedAt: number | null;
   /** The user's last turn ended, pending a reply. */
@@ -54,31 +71,24 @@ export const DUPLEX_TIMELINE_INITIAL_STATE: DuplexTimelineState = {
   userSpeaking: false,
   botSpeaking: false,
   botReplying: false,
+  replyId: null,
   replyEndedAt: null,
   userStoppedAt: null,
   interrupted: false,
 };
 
-/** Markers older than this are off screen. */
-const KEEP_MS = 120_000;
-/** A "reply" this close to a bot backchannel was the backchannel. */
-const BACKCHANNEL_OVERLAP_MS = 1000;
-/** An "interruption" this close to a user backchannel was the backchannel. */
-const ACKNOWLEDGMENT_MS = 3000;
-/**
- * The server holds a turn while classifying it, so the bot may stop before
- * an interrupting turn is announced. The renderer checks the audio.
- */
+/** How long a user turn may trail the end of a reply and still have overlapped it. */
 const LATE_INTERRUPTION_MS = 1500;
 
 type WithoutId<T> = T extends unknown ? Omit<T, "id"> : never;
 
+/** Adds a marker, dropping those older than the renderer's level history. */
 function withMarker(
   state: DuplexTimelineState,
   markers: DuplexTimelineMarker[],
   marker: WithoutId<DuplexTimelineMarker>,
 ): Pick<DuplexTimelineState, "markers" | "nextId"> {
-  const cutoff = marker.at - KEEP_MS;
+  const cutoff = marker.at - DUPLEX_TIMELINE_HISTORY_MS;
   return {
     markers: [
       ...markers.filter((existing) => existing.at >= cutoff),
@@ -88,9 +98,27 @@ function withMarker(
   };
 }
 
+/** Ends open bot backchannels and interruptions; the same array if none were open. */
+function closeOpen(markers: DuplexTimelineMarker[], now: number) {
+  let changed = false;
+  const next = markers.map((marker) => {
+    if (marker.kind === "bot-backchannel" && marker.end === null) {
+      changed = true;
+      return { ...marker, end: now };
+    }
+    if (marker.kind === "interruption" && marker.cutAt === null) {
+      changed = true;
+      return { ...marker, cutAt: now };
+    }
+    return marker;
+  });
+  return changed ? next : markers;
+}
+
 /**
  * Turns RTVI turn and backchannel events into timeline markers: handoffs
  * with reply latency, interruptions, and backchannels on either side.
+ * User turn events mark turns only; a user backchannel arrives on its own.
  */
 export function reduceDuplexTimeline(
   state: DuplexTimelineState,
@@ -104,9 +132,11 @@ export function reduceDuplexTimeline(
     case "disconnected":
       return {
         ...state,
+        markers: closeOpen(state.markers, now),
         userSpeaking: false,
         botSpeaking: false,
         botReplying: false,
+        replyId: null,
         interrupted: false,
       };
 
@@ -130,7 +160,7 @@ export function reduceDuplexTimeline(
         return {
           ...state,
           ...withMarker(state, state.markers, {
-            kind: "interruption",
+            kind: "possible-interruption",
             at: now,
             cutAt: state.replyEndedAt,
           }),
@@ -148,53 +178,43 @@ export function reduceDuplexTimeline(
         userStoppedAt: now,
       };
 
-    case "bot-started-speaking":
+    case "bot-started-speaking": {
       // Inside the user's turn it's a backchannel playing.
       if (state.userSpeaking) return { ...state, botSpeaking: true };
-      return {
-        ...state,
-        ...(state.userStoppedAt === null
-          ? {}
+      const reply =
+        state.userStoppedAt === null
+          ? null
           : withMarker(state, state.markers, {
               kind: "reply",
               at: now,
               from: state.userStoppedAt,
-            })),
-        botSpeaking: true,
-        botReplying: true,
-        userStoppedAt: null,
-      };
-
-    case "bot-stopped-speaking": {
-      const markers = state.markers.map((marker) => {
-        if (marker.kind === "bot-backchannel" && marker.end === null) {
-          return { ...marker, end: now };
-        }
-        if (
-          state.interrupted &&
-          marker.kind === "interruption" &&
-          marker.cutAt === null
-        ) {
-          return { ...marker, cutAt: now };
-        }
-        return marker;
-      });
+            });
       return {
         ...state,
-        markers,
-        botSpeaking: false,
-        botReplying: false,
-        replyEndedAt: state.botReplying && !state.interrupted ? now : null,
-        interrupted: false,
+        ...reply,
+        botSpeaking: true,
+        botReplying: true,
+        replyId: reply ? state.nextId : null,
+        userStoppedAt: null,
       };
     }
 
+    case "bot-stopped-speaking":
+      return {
+        ...state,
+        markers: closeOpen(state.markers, now),
+        botSpeaking: false,
+        botReplying: false,
+        replyId: null,
+        replyEndedAt: state.botReplying && !state.interrupted ? now : null,
+        interrupted: false,
+      };
+
     case "bot-backchannel": {
-      // Bot output follows bot-started-speaking, so speech that read as a
-      // reply may have been this backchannel: undo it.
+      // Bot output follows bot-started-speaking, so the current speech may
+      // have read as a reply: undo that reply and keep the turn pending.
       const reply = state.markers.find(
-        (marker) =>
-          marker.kind === "reply" && now - marker.at < BACKCHANNEL_OVERLAP_MS,
+        (marker) => marker.kind === "reply" && marker.id === state.replyId,
       );
       return {
         ...state,
@@ -205,24 +225,19 @@ export function reduceDuplexTimeline(
         ),
         userStoppedAt:
           reply?.kind === "reply" ? reply.from : state.userStoppedAt,
-        botReplying: reply ? false : state.botReplying,
+        botReplying: false,
+        replyId: null,
       };
     }
 
     case "user-backchannel":
-      // It may have read as an interruption first.
       return {
         ...state,
-        ...withMarker(
-          state,
-          state.markers.filter(
-            (marker) =>
-              marker.kind !== "interruption" ||
-              now - marker.at > ACKNOWLEDGMENT_MS,
-          ),
-          { kind: "user-backchannel", at: now, text: event.text },
-        ),
-        interrupted: false,
+        ...withMarker(state, state.markers, {
+          kind: "user-backchannel",
+          at: now,
+          text: event.text,
+        }),
       };
   }
 }

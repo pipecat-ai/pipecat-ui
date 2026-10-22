@@ -10,7 +10,8 @@ export interface DuplexTimelinePalette {
   agent: string;
   user: string;
   backchannel: string;
-  overlap: string;
+  interruption: string;
+  slowReply: string;
   grid: string;
   /** Handoff rules and latency brackets. */
   text: string;
@@ -44,6 +45,8 @@ function formatElapsed(seconds: number) {
 const pixelsAt = (time: number) => Math.round((time / 1000) * PX_PER_SECOND);
 /** Slots kept per lane: more than the widest screen shows. */
 const SLOT_CAPACITY = 1024;
+/** How far back level history reaches; older markers can't be drawn. */
+export const DUPLEX_TIMELINE_HISTORY_MS = SLOT_CAPACITY * SLOT_MS;
 
 /** Vertical layout, CSS px. */
 const LABEL_ROW = 13;
@@ -65,7 +68,7 @@ export const DUPLEX_TIMELINE_HEIGHT = LANES_BOTTOM + AXIS_HEIGHT;
 interface Segment {
   start: number;
   end: number;
-  kind: "backchannel" | "overlap";
+  kind: "backchannel" | "interruption";
 }
 
 /** Names a segment, from its start. */
@@ -239,7 +242,7 @@ export interface DuplexTimelineRenderer {
 
 /**
  * Two scrolling waveforms, agent over user, colored by what the audio was
- * (speech, backchannel, overlap), with handoff rules and reply latency.
+ * (speech, backchannel, interruption), with handoff rules and reply latency.
  * Owns its frame loop and the label spans in `labelRoot`; the caller feeds
  * tracks, markers, colors and options.
  */
@@ -255,7 +258,8 @@ export function createDuplexTimelineRenderer(
     agent: "black",
     user: "black",
     backchannel: "gray",
-    overlap: "black",
+    interruption: "black",
+    slowReply: "black",
     grid: "gray",
     text: "gray",
   };
@@ -351,6 +355,7 @@ export function createDuplexTimelineRenderer(
   function markerEnd(marker: DuplexTimelineMarker, now: number) {
     if (marker.kind === "bot-backchannel") return marker.end ?? now;
     if (marker.kind === "interruption") return marker.cutAt ?? now;
+    if (marker.kind === "possible-interruption") return marker.cutAt;
     return marker.at;
   }
 
@@ -425,7 +430,9 @@ export function createDuplexTimelineRenderer(
    * announced) to the bot's cut-off. Null if the audio didn't overlap.
    */
   function overlapSpans(
-    marker: DuplexTimelineMarker & { kind: "interruption" },
+    marker: DuplexTimelineMarker & {
+      kind: "interruption" | "possible-interruption";
+    },
     now: number,
   ): Record<DuplexTimelineLane, [number, number]> | null {
     const cutAt = marker.cutAt ?? now;
@@ -438,7 +445,7 @@ export function createDuplexTimelineRenderer(
     };
   }
 
-  /** Non-speech stretches per lane (backchannels and overlaps) and their labels. */
+  /** Non-speech stretches per lane (backchannels and interruptions) and their labels. */
   function segments(visible: readonly DuplexTimelineMarker[], now: number) {
     const lanes: Record<DuplexTimelineLane, Segment[]> = {
       agent: [],
@@ -467,13 +474,16 @@ export function createDuplexTimelineRenderer(
           text: marker.text.replace(/[.!?,]+$/, "").toLowerCase(),
           start,
         });
-      } else if (marker.kind === "interruption") {
+      } else if (
+        marker.kind === "interruption" ||
+        marker.kind === "possible-interruption"
+      ) {
         if (!options.interruptions) continue;
         const overlap = overlapSpans(marker, now);
         if (!overlap) continue;
         for (const lane of ["agent", "user"] as const) {
           const [start, end] = overlap[lane];
-          lanes[lane].push({ start, end, kind: "overlap" });
+          lanes[lane].push({ start, end, kind: "interruption" });
         }
         named.push({
           id: marker.id,
@@ -525,7 +535,7 @@ export function createDuplexTimelineRenderer(
     return mask;
   }
 
-  /** Mirrored bars: lane color for speech, then backchannel or overlap. */
+  /** Mirrored bars: lane color for speech, then backchannel or interruption. */
   function drawLane(
     lane: DuplexTimelineLane,
     color: string,
@@ -540,7 +550,7 @@ export function createDuplexTimelineRenderer(
     const colors: Record<Segment["kind"] | "speech", string> = {
       speech: color,
       backchannel: palette.backchannel,
-      overlap: palette.overlap,
+      interruption: palette.interruption,
     };
     const newest = Math.floor(now / SLOT_MS);
     const count = Math.ceil(width / SLOT_PX) + 1;
@@ -614,7 +624,7 @@ export function createDuplexTimelineRenderer(
     const x = inside ? (from + to) / 2 - textWidth / 2 : to + 4;
 
     // The line breaks around the text, so no background fill is needed.
-    ctx.strokeStyle = slow ? palette.overlap : palette.text;
+    ctx.strokeStyle = slow ? palette.slowReply : palette.text;
     ctx.globalAlpha = 0.8;
     ctx.beginPath();
     ctx.moveTo(Math.round(from) + 0.5, y);

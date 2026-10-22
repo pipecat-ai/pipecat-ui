@@ -12,14 +12,19 @@ function useMicrophoneTrack(enabled: boolean) {
     if (!enabled) return;
     let stream: MediaStream | undefined;
     let cancelled = false;
-    void navigator.mediaDevices.getUserMedia({ audio: true }).then((s) => {
-      if (cancelled) {
-        s.getTracks().forEach((t) => t.stop());
-        return;
-      }
-      stream = s;
-      setTrack(s.getAudioTracks()[0] ?? null);
-    });
+    void navigator.mediaDevices.getUserMedia({ audio: true }).then(
+      (s) => {
+        if (cancelled) {
+          s.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        stream = s;
+        setTrack(s.getAudioTracks()[0] ?? null);
+      },
+      () => {
+        // Denied or unavailable: the user lane stays flat.
+      },
+    );
     return () => {
       cancelled = true;
       stream?.getTracks().forEach((t) => t.stop());

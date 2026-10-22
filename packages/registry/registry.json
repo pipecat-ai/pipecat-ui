@@ -123,7 +123,7 @@
       "name": "duplex-timeline",
       "type": "registry:component",
       "title": "Duplex Timeline",
-      "description": "Scrolling agent and user waveforms on one clock, colored by what the audio was: speech, backchannels, and the overlap when the user talks over the bot. Dashed rules mark each handoff, with the reply latency between them. Headless view for any two tracks and a marker list, plus a Pipecat-connected wrapper that builds the markers from RTVI turn and backchannel events.",
+      "description": "Scrolling agent and user waveforms on one clock, colored by what the audio was: speech, backchannels, and interruptions where the user talks over the bot. Dashed rules mark each handoff, with the reply latency between them. Headless view for any two tracks and a marker list, plus a Pipecat-connected wrapper that builds the markers from RTVI turn and backchannel events.",
       "dependencies": [
         "@pipecat-ai/client-js@^1.14.0",
         "@pipecat-ai/client-react@^1.9.0"

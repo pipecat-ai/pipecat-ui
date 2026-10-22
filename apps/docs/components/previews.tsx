@@ -1485,7 +1485,8 @@ export function DuplexTimelinePreview() {
   const [agentColor, setAgentColor] = useState("");
   const [userColor, setUserColor] = useState("");
   const [backchannelColor, setBackchannelColor] = useState("");
-  const [overlapColor, setOverlapColor] = useState("");
+  const [interruptionColor, setInterruptionColor] = useState("");
+  const [slowReplyColor, setSlowReplyColor] = useState("");
   const [hidden, setHidden] = useState<
     Partial<Record<(typeof DUPLEX_TIMELINE_HIDE_OPTIONS)[number], boolean>>
   >({});
@@ -1494,7 +1495,8 @@ export function DuplexTimelinePreview() {
     agentColor: agentColor || undefined,
     userColor: userColor || undefined,
     backchannelColor: backchannelColor || undefined,
-    overlapColor: overlapColor || undefined,
+    interruptionColor: interruptionColor || undefined,
+    slowReplyColor: slowReplyColor || undefined,
   };
 
   return (
@@ -1542,10 +1544,16 @@ export function DuplexTimelinePreview() {
               placeholder="--muted-foreground"
             />
             <ColorControl
-              label="overlapColor"
-              value={overlapColor}
-              onChange={setOverlapColor}
+              label="interruptionColor"
+              value={interruptionColor}
+              onChange={setInterruptionColor}
               placeholder="--inactive-background"
+            />
+            <ColorControl
+              label="slowReplyColor"
+              value={slowReplyColor}
+              onChange={setSlowReplyColor}
+              placeholder="interruptionColor"
             />
           </ControlSection>
           <ControlSection title="Hide">
