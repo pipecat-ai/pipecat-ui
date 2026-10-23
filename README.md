@@ -24,7 +24,8 @@ and yours to edit.
   control with push-to-talk and a live visualizer, camera and screen-share
   toggles with preview tiles, device pickers, DTMF keypad
 - 📈 **Audio visualizers** — canvas bar and radial renderers plus a WebGL wave
-  renderer sharing a voice-tuned mel-band core
+  renderer sharing a voice-tuned mel-band core, and a duplex timeline of both
+  sides' speech with handoffs, reply latency, backchannels and interruptions
 - 💬 **Conversation UI** — live scrolling transcript with roles and karaoke
   text, message composer, caption-style overlay for bot speech
 - 🔍 **Session insight** — client/agent status rows, session metadata, bot

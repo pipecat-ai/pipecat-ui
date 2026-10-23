@@ -60,6 +60,7 @@ import {
   AudioVisualizerWave,
   AudioVisualizerWaveView,
 } from "@/components/pipecat/audio-visualizer-wave";
+import { DuplexTimelineView } from "@/components/pipecat/duplex-timeline";
 import { Metric } from "@/components/pipecat/metric";
 import { Console } from "@/components/pipecat/console/console";
 import { MetricsView } from "@/components/pipecat/metrics/metrics";
@@ -72,6 +73,7 @@ import { Button } from "@/components/ui/button";
 
 import { registerTransport } from "@/lib/transports";
 
+import { useDuplexDemo } from "../../../packages/registry/src/fixtures/duplex-demo";
 import { PipecatSandbox } from "./pipecat-sandbox";
 import {
   BooleanControl,
@@ -1458,6 +1460,135 @@ export function AudioVisualizerWavePreview() {
           {...sharedProps}
         />
         <VizStateButtons value={vizState} onChange={setVizState} />
+      </div>
+    </PreviewShell>
+  );
+}
+
+const DUPLEX_TIMELINE_HIDE_OPTIONS = [
+  "noBackchannels",
+  "noInterruptions",
+  "noHandoffs",
+  "noLatency",
+  "noLaneLabels",
+  "noSegmentLabels",
+  "noTimeLabels",
+  "noLegend",
+] as const;
+
+export function DuplexTimelinePreview() {
+  const [playing, setPlaying] = useState(false);
+  const demo = useDuplexDemo(playing);
+  const [agentLabel, setAgentLabel] = useState("agent");
+  const [userLabel, setUserLabel] = useState("you");
+  const [slowReplyMs, setSlowReplyMs] = useState(1000);
+  const [agentColor, setAgentColor] = useState("");
+  const [userColor, setUserColor] = useState("");
+  const [backchannelColor, setBackchannelColor] = useState("");
+  const [interruptionColor, setInterruptionColor] = useState("");
+  const [slowReplyColor, setSlowReplyColor] = useState("");
+  const [hidden, setHidden] = useState<
+    Partial<Record<(typeof DUPLEX_TIMELINE_HIDE_OPTIONS)[number], boolean>>
+  >({});
+
+  const colors = {
+    agentColor: agentColor || undefined,
+    userColor: userColor || undefined,
+    backchannelColor: backchannelColor || undefined,
+    interruptionColor: interruptionColor || undefined,
+    slowReplyColor: slowReplyColor || undefined,
+  };
+
+  return (
+    <PreviewShell
+      tall
+      controls={
+        <>
+          <ControlSection title="Labels">
+            <TextControl
+              label="agentLabel"
+              value={agentLabel}
+              onChange={setAgentLabel}
+            />
+            <TextControl
+              label="userLabel"
+              value={userLabel}
+              onChange={setUserLabel}
+            />
+            <NumberControl
+              label="slowReplyMs"
+              value={slowReplyMs}
+              onChange={setSlowReplyMs}
+              min={200}
+              max={3000}
+              step={100}
+            />
+          </ControlSection>
+          <ControlSection title="Colors">
+            <ColorControl
+              label="agentColor"
+              value={agentColor}
+              onChange={setAgentColor}
+              placeholder="--agent-foreground"
+            />
+            <ColorControl
+              label="userColor"
+              value={userColor}
+              onChange={setUserColor}
+              placeholder="--client-foreground"
+            />
+            <ColorControl
+              label="backchannelColor"
+              value={backchannelColor}
+              onChange={setBackchannelColor}
+              placeholder="--muted-foreground"
+            />
+            <ColorControl
+              label="interruptionColor"
+              value={interruptionColor}
+              onChange={setInterruptionColor}
+              placeholder="--inactive-background"
+            />
+            <ColorControl
+              label="slowReplyColor"
+              value={slowReplyColor}
+              onChange={setSlowReplyColor}
+              placeholder="interruptionColor"
+            />
+          </ControlSection>
+          <ControlSection title="Hide">
+            {DUPLEX_TIMELINE_HIDE_OPTIONS.map((option) => (
+              <BooleanControl
+                key={option}
+                label={option}
+                checked={hidden[option] ?? false}
+                onCheckedChange={(checked) =>
+                  setHidden((current) => ({ ...current, [option]: checked }))
+                }
+              />
+            ))}
+          </ControlSection>
+        </>
+      }
+    >
+      <div className="flex w-full max-w-2xl min-w-0 flex-col gap-4">
+        <DuplexTimelineView
+          {...demo}
+          {...colors}
+          {...hidden}
+          running={playing}
+          agentLabel={agentLabel}
+          userLabel={userLabel}
+          slowReplyMs={slowReplyMs}
+        />
+        <Button
+          variant="outline"
+          size="sm"
+          className="self-start"
+          onClick={() => setPlaying((v) => !v)}
+        >
+          {playing ? "Stop" : "Play a conversation"}
+        </Button>
       </div>
     </PreviewShell>
   );
