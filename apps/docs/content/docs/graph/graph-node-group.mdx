@@ -1,0 +1,158 @@
+---
+title: Node Group
+description: A group of nodes — a tinted island around them and a name tag on its top edge — that hugs what is inside it or takes its size from a canvas.
+storybook: "/storybook/?path=/story/graph-node-group--basic"
+---
+
+<GraphNodeGroupPreview />
+
+## Installation
+
+<InstallTabs name="graph-node-group" />
+
+This installs [Graph](/docs/graph/graph) too, for the palette a group takes its tone from.
+
+## Usage
+
+```tsx
+import { GripVerticalIcon } from "lucide-react";
+
+import {
+  NodeGroup,
+  NodeGroupHandle,
+  NodeGroupIsland,
+  NodeGroupTag,
+  NodeGroupTitle,
+} from "@/components/pipecat/graph/node-group";
+
+<NodeGroup tone="blue">
+  <NodeGroupTag>
+    <NodeGroupHandle>
+      <GripVerticalIcon aria-hidden />
+      <NodeGroupTitle>Book it</NodeGroupTitle>
+    </NodeGroupHandle>
+  </NodeGroupTag>
+  <NodeGroupIsland className="grid-flow-col gap-10">
+    <Node>…</Node>
+    <Node>…</Node>
+  </NodeGroupIsland>
+</NodeGroup>;
+```
+
+A group is markup and CSS only. It doesn't work out which nodes belong to it, follow them
+or move them: that is the canvas's job.
+
+## Parts
+
+| Part              | What it is                                                                      |
+| ----------------- | ------------------------------------------------------------------------------- |
+| `NodeGroup`       | The group's box: its size, its tone and the scale of its parts. Paints nothing. |
+| `NodeGroupIsland` | The tinted region behind the group's nodes.                                     |
+| `NodeGroupTag`    | The name tag. It straddles the island's top edge, in from the left corner.      |
+| `NodeGroupHandle` | The part of the tag a group is dragged by: a grip, the name.                    |
+| `NodeGroupTitle`  | The group's name, after a dot in its tone.                                      |
+| `NodeGroupEmpty`  | What an empty group shows in the middle of its island.                          |
+| `NodeGroupAdd`    | The button an empty group starts from, in its tone.                             |
+
+The tag is a row. Anything you put in it after the handle, such as a menu or an add
+button, lines up beside the name. The handle only looks grabbable; point your canvas's
+drag handle at it.
+
+### Around its nodes, or on a canvas
+
+Put nodes inside `NodeGroupIsland` and the group hugs them. The island is a grid, so
+`grid-flow-col` and a gap lay them out in a row.
+
+A canvas places nodes itself, and draws a group's island under them and its tag over
+them. `NodeGroup` paints nothing, so each can have a root of its own: give one the
+island's position and size, and the other its corner.
+
+```tsx
+{
+  /* Under the nodes. */
+}
+<NodeGroup tone="blue" className="pointer-events-none absolute" style={rect}>
+  <NodeGroupIsland />
+</NodeGroup>;
+
+{
+  /* Over them. */
+}
+<NodeGroup tone="blue" className="absolute" style={corner}>
+  <NodeGroupTag>…</NodeGroupTag>
+</NodeGroup>;
+```
+
+`pointer-events-none` on the island's root keeps the canvas and the nodes on it easy to
+reach.
+
+## Sizes
+
+`size` steps the island's padding and radius and the tag's type together. Match it to the
+nodes inside.
+
+| Size | Padding | Tag text |
+| ---- | ------- | -------- |
+| `sm` | 16px    | 12px     |
+| `md` | 24px    | 14px     |
+| `lg` | 32px    | 16px     |
+| `xl` | 40px    | 18px     |
+
+The island's top padding is twice the rest, to clear the tag.
+
+## Tone
+
+`tone` colours the island and the tag's dot from the
+[graph palette](/docs/graph/graph#the-palette). Nodes inside the island take the group's
+tone unless they name their own.
+
+## An empty group
+
+`empty` outlines the island, pads it evenly and gives it a size to wait at.
+`NodeGroupEmpty` sits in its centre, with whatever starts the group off. `NodeGroupAdd`
+is a button for that, in the group's tone: dashed at rest, tinted under the pointer, and
+filled while it has a menu or popover open.
+
+```tsx
+<NodeGroup tone="green" empty>
+  <NodeGroupTag>…</NodeGroupTag>
+  <NodeGroupIsland>
+    <NodeGroupEmpty>
+      <NodeGroupAdd aria-label="Add a step to Book it" onClick={add} />
+      Add a step, or drop one here
+    </NodeGroupEmpty>
+  </NodeGroupIsland>
+</NodeGroup>
+```
+
+## Styling
+
+Each part takes `className` and Base UI's `render` prop, and carries a `data-slot`
+(`node-group`, `node-group-island`, `node-group-tag` and so on). `NodeGroup` also carries
+`data-size`, `data-tone` and `data-empty`. Other state is yours to add: put `data-locked`
+on `NodeGroup` and style any part from it with `group-data-locked/node-group:`.
+
+Sizes live in variables on `NodeGroup`:
+
+| Variable              | Sets                                                      |
+| --------------------- | --------------------------------------------------------- |
+| `--node-group-px`     | The island's inline padding, and how far in the tag sits. |
+| `--node-group-py`     | The island's block padding. The top is twice this.        |
+| `--node-group-radius` | The island's corner radius.                               |
+| `--node-group-text`   | The tag's text.                                           |
+
+```tsx
+<NodeGroup className="[--node-group-radius:--spacing(8.5)]">
+  <NodeGroupTag className="shadow-md ring-0">…</NodeGroupTag>
+  <NodeGroupIsland>…</NodeGroupIsland>
+</NodeGroup>
+```
+
+## Key props
+
+| Prop     | On         | Type                           | Description                                                 |
+| -------- | ---------- | ------------------------------ | ----------------------------------------------------------- |
+| `size`   | NodeGroup  | `"sm" \| "md" \| "lg" \| "xl"` | The island's padding and radius, the tag's type.            |
+| `tone`   | NodeGroup  | a palette tone, or your own    | The tone of the island, the dot and everything inside.      |
+| `empty`  | NodeGroup  | `boolean`                      | Outlines the island and gives it a size to wait at.         |
+| `render` | Every part | `ReactElement \| function`     | Render the part as another element, keeping its attributes. |

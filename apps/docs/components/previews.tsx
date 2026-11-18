@@ -3,10 +3,14 @@
 import { type TransportState, TransportStateEnum } from "@pipecat-ai/client-js";
 import type { ConversationMessage } from "@pipecat-ai/client-react";
 import {
+  EllipsisIcon,
+  GripVerticalIcon,
+  LockIcon,
   MaximizeIcon,
   MicIcon,
   PhoneIcon,
   PhoneOffIcon,
+  PlusIcon,
   VideoIcon,
   Volume2Icon,
   XIcon,
@@ -61,6 +65,36 @@ import {
   AudioVisualizerWaveView,
 } from "@/components/pipecat/audio-visualizer-wave";
 import { DuplexTimelineView } from "@/components/pipecat/duplex-timeline";
+import { Graph, graphToneStyle } from "@/components/pipecat/graph/graph";
+import {
+  NodeAction,
+  Node,
+  NodeCard,
+  NodeContent,
+  NodeDescription,
+  NodeExpand,
+  NodeFooter,
+  NodeHeader,
+  type NodeSize,
+  NodeTitle,
+} from "@/components/pipecat/graph/node";
+import {
+  NodeConnector,
+  NodeConnectorLabel,
+  NodeConnectorPort,
+  NodeConnectorsLeft,
+  NodeConnectorsRight,
+} from "@/components/pipecat/graph/node-connector";
+import {
+  NodeGroup,
+  NodeGroupAdd,
+  NodeGroupEmpty,
+  NodeGroupHandle,
+  NodeGroupIsland,
+  type NodeGroupSize,
+  NodeGroupTag,
+  NodeGroupTitle,
+} from "@/components/pipecat/graph/node-group";
 import { Metric } from "@/components/pipecat/metric";
 import { Console } from "@/components/pipecat/console/console";
 import { MetricsView } from "@/components/pipecat/metrics/metrics";
@@ -2071,6 +2105,508 @@ export function ConsolePreview() {
           </div>,
           document.body,
         )}
+    </PreviewShell>
+  );
+}
+
+const NODE_SIZES = ["sm", "md", "lg", "xl"] as const satisfies NodeSize[];
+const NODE_INPUTS = ["Patient", "Slot", "Reason"] as const;
+const NODE_OUTPUTS = ["Booked", "No slots", "Declined"] as const;
+const GRAPH_TONES = [
+  "neutral",
+  "blue",
+  "purple",
+  "amber",
+  "green",
+  "pink",
+  "coral",
+  "red",
+] as const;
+// "inherit" leaves the tone prop off, so the part takes the tone around it.
+const INHERITED_TONES = ["inherit", ...GRAPH_TONES] as const;
+type InheritedTone = (typeof INHERITED_TONES)[number];
+const toneProp = (tone: InheritedTone) =>
+  tone === "inherit" ? undefined : tone;
+
+export function GraphPreview() {
+  const [tone, setTone] = useState<(typeof GRAPH_TONES)[number]>("blue");
+  const [nodeTone, setNodeTone] = useState<InheritedTone>("inherit");
+
+  return (
+    <PreviewShell
+      tall
+      controls={
+        <ControlSection title="Tone">
+          <SelectControl
+            label="graph tone"
+            value={tone}
+            onValueChange={setTone}
+            options={GRAPH_TONES}
+          />
+          <SelectControl
+            label="node tone"
+            value={nodeTone}
+            onValueChange={setNodeTone}
+            options={INHERITED_TONES}
+          />
+        </ControlSection>
+      }
+    >
+      <Graph
+        tone={tone}
+        className="flex flex-wrap items-center justify-center gap-x-12 gap-y-8"
+      >
+        <Node size="sm" tone={toneProp(nodeTone)}>
+          <NodeCard>
+            <NodeHeader>
+              <NodeTitle>Greet the caller</NodeTitle>
+              <NodeDescription className="text-tone-ink">
+                Speech
+              </NodeDescription>
+            </NodeHeader>
+            <NodeConnectorsLeft>
+              <NodeConnector>
+                <NodeConnectorPort />
+              </NodeConnector>
+            </NodeConnectorsLeft>
+            <NodeContent>
+              <NodeDescription>Takes the tone around it.</NodeDescription>
+            </NodeContent>
+            <NodeConnectorsRight>
+              <NodeConnector>
+                <NodeConnectorPort />
+                <NodeConnectorLabel>Next</NodeConnectorLabel>
+              </NodeConnector>
+            </NodeConnectorsRight>
+          </NodeCard>
+        </Node>
+        <ul className="flex flex-col gap-1.5">
+          {GRAPH_TONES.map((name) => (
+            <li
+              key={name}
+              className="flex items-center gap-1.5"
+              style={graphToneStyle(name)}
+            >
+              <span className="bg-tone size-5 rounded-sm" />
+              <span className="bg-tone-mid size-5 rounded-sm" />
+              <span className="bg-tone-soft size-5 rounded-sm" />
+              <span className="text-tone-ink ml-1.5 font-mono text-xs">
+                {name}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </Graph>
+    </PreviewShell>
+  );
+}
+
+const NODE_VARIANTS = ["default", "subflow"] as const;
+
+export function GraphNodePreview() {
+  const [size, setSize] = useState<NodeSize>("md");
+  const [variant, setVariant] =
+    useState<(typeof NODE_VARIANTS)[number]>("default");
+  const [tone, setTone] = useState<(typeof GRAPH_TONES)[number]>("neutral");
+  const [fluid, setFluid] = useState(false);
+  const [width, setWidth] = useState(20);
+  const [header, setHeader] = useState(true);
+  const [content, setContent] = useState(true);
+  const [footer, setFooter] = useState(true);
+  const [inputs, setInputs] = useState(1);
+  const [leftLabels, setLeftLabels] = useState(false);
+  const [outputs, setOutputs] = useState(3);
+  const [rightLabels, setRightLabels] = useState(true);
+  const subflow = variant === "subflow";
+  const shape = subflow ? "diamond" : "circle";
+
+  return (
+    <PreviewShell
+      tall
+      controls={
+        <>
+          <ControlSection title="Node">
+            <SelectControl
+              label="size"
+              value={size}
+              onValueChange={setSize}
+              options={NODE_SIZES}
+            />
+            <SelectControl
+              label="variant"
+              value={variant}
+              onValueChange={setVariant}
+              options={NODE_VARIANTS}
+            />
+            <SelectControl
+              label="tone"
+              value={tone}
+              onValueChange={setTone}
+              options={GRAPH_TONES}
+            />
+            <BooleanControl
+              label="fluid"
+              checked={fluid}
+              onCheckedChange={setFluid}
+            />
+            <NumberControl
+              label="parent width (rem)"
+              value={width}
+              onChange={setWidth}
+              min={10}
+              max={32}
+            />
+          </ControlSection>
+          <ControlSection title="Parts">
+            <BooleanControl
+              label="header"
+              checked={header}
+              onCheckedChange={setHeader}
+            />
+            <BooleanControl
+              label="content"
+              checked={content}
+              onCheckedChange={setContent}
+            />
+            <BooleanControl
+              label="footer"
+              checked={footer}
+              onCheckedChange={setFooter}
+            />
+          </ControlSection>
+          <ControlSection title="Connectors">
+            <NumberControl
+              label="left connectors"
+              value={inputs}
+              onChange={setInputs}
+              min={0}
+              max={NODE_INPUTS.length}
+            />
+            <BooleanControl
+              label="left connector labels"
+              checked={leftLabels}
+              onCheckedChange={setLeftLabels}
+            />
+            <NumberControl
+              label="right connectors"
+              value={outputs}
+              onChange={setOutputs}
+              min={0}
+              max={NODE_OUTPUTS.length}
+            />
+            <BooleanControl
+              label="right connector labels"
+              checked={rightLabels}
+              onCheckedChange={setRightLabels}
+            />
+          </ControlSection>
+        </>
+      }
+    >
+      {/* The parent's width only matters to a fluid node. */}
+      <div
+        className="flex max-w-full justify-center"
+        style={{ width: `${width}rem` }}
+      >
+        <Node size={size} fluid={fluid} variant={variant} tone={tone}>
+          <NodeCard>
+            {header && (
+              <NodeHeader>
+                <NodeTitle>Book appointment</NodeTitle>
+                <NodeDescription className="text-tone-ink">
+                  {subflow ? "Subflow" : "Action"}
+                </NodeDescription>
+                <NodeAction>
+                  {subflow ? (
+                    <NodeExpand aria-label="Open Book appointment" />
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      aria-label="Node options"
+                    >
+                      <EllipsisIcon />
+                    </Button>
+                  )}
+                </NodeAction>
+              </NodeHeader>
+            )}
+            <NodeConnectorsLeft>
+              {NODE_INPUTS.slice(0, inputs).map((input) => (
+                <NodeConnector key={input}>
+                  <NodeConnectorPort shape={shape} />
+                  {leftLabels && (
+                    <NodeConnectorLabel>{input}</NodeConnectorLabel>
+                  )}
+                </NodeConnector>
+              ))}
+            </NodeConnectorsLeft>
+            {content && (
+              <NodeContent>
+                <NodeDescription>
+                  Holds the slot the caller chose and confirms it.
+                </NodeDescription>
+              </NodeContent>
+            )}
+            <NodeConnectorsRight>
+              {NODE_OUTPUTS.slice(0, outputs).map((output) => (
+                <NodeConnector key={output}>
+                  <NodeConnectorPort shape={shape} />
+                  {rightLabels && (
+                    <NodeConnectorLabel>{output}</NodeConnectorLabel>
+                  )}
+                </NodeConnector>
+              ))}
+            </NodeConnectorsRight>
+            {footer && (
+              <NodeFooter>
+                <NodeDescription>needs patient · slot</NodeDescription>
+              </NodeFooter>
+            )}
+          </NodeCard>
+        </Node>
+      </div>
+    </PreviewShell>
+  );
+}
+
+const CONNECTOR_SIDES = ["left", "right"] as const;
+const PORT_SHAPES = ["circle", "diamond"] as const;
+const PORT_VARIANTS = ["outline", "dashed", "solid"] as const;
+
+export function GraphNodeConnectorPreview() {
+  const [side, setSide] = useState<(typeof CONNECTOR_SIDES)[number]>("right");
+  const [label, setLabel] = useState(true);
+  const [active, setActive] = useState(false);
+  const [tone, setTone] = useState<InheritedTone>("inherit");
+  const [shape, setShape] = useState<(typeof PORT_SHAPES)[number]>("circle");
+  const [variant, setVariant] =
+    useState<(typeof PORT_VARIANTS)[number]>("outline");
+  const [size, setSize] = useState<NodeSize>("lg");
+  const [nodeTone, setNodeTone] =
+    useState<(typeof GRAPH_TONES)[number]>("green");
+  const Connectors = side === "left" ? NodeConnectorsLeft : NodeConnectorsRight;
+
+  return (
+    <PreviewShell
+      controls={
+        <>
+          <ControlSection title="Connector">
+            <SelectControl
+              label="side"
+              value={side}
+              onValueChange={setSide}
+              options={CONNECTOR_SIDES}
+            />
+            <SelectControl
+              label="tone"
+              value={tone}
+              onValueChange={setTone}
+              options={INHERITED_TONES}
+            />
+            <BooleanControl
+              label="label"
+              checked={label}
+              onCheckedChange={setLabel}
+            />
+            <BooleanControl
+              label="active"
+              checked={active}
+              onCheckedChange={setActive}
+            />
+          </ControlSection>
+          <ControlSection title="Port">
+            <SelectControl
+              label="shape"
+              value={shape}
+              onValueChange={setShape}
+              options={PORT_SHAPES}
+            />
+            <SelectControl
+              label="variant"
+              value={variant}
+              onValueChange={setVariant}
+              options={PORT_VARIANTS}
+            />
+          </ControlSection>
+          <ControlSection title="Node">
+            <SelectControl
+              label="size"
+              value={size}
+              onValueChange={setSize}
+              options={NODE_SIZES}
+            />
+            <SelectControl
+              label="tone"
+              value={nodeTone}
+              onValueChange={setNodeTone}
+              options={GRAPH_TONES}
+            />
+          </ControlSection>
+        </>
+      }
+    >
+      <Node size={size} tone={nodeTone}>
+        <NodeCard>
+          <NodeHeader>
+            <NodeTitle>Verify identity</NodeTitle>
+            <NodeDescription className="text-tone-ink">
+              Question
+            </NodeDescription>
+          </NodeHeader>
+          <NodeContent>
+            <NodeDescription>Hover the port for its halo.</NodeDescription>
+          </NodeContent>
+          <Connectors>
+            <NodeConnector tone={toneProp(tone)} active={active}>
+              <NodeConnectorPort shape={shape} variant={variant} />
+              {label && <NodeConnectorLabel>Verified</NodeConnectorLabel>}
+            </NodeConnector>
+          </Connectors>
+        </NodeCard>
+      </Node>
+    </PreviewShell>
+  );
+}
+
+const GROUP_SIZES = ["sm", "md", "lg", "xl"] as const satisfies NodeGroupSize[];
+const GROUP_STEPS = [
+  { title: "Find a slot", kind: "Question" },
+  { title: "Book it", kind: "Action" },
+] as const;
+
+export function GraphNodeGroupPreview() {
+  const [size, setSize] = useState<NodeGroupSize>("md");
+  const [tone, setTone] = useState<(typeof GRAPH_TONES)[number]>("blue");
+  const [empty, setEmpty] = useState(false);
+  const [grip, setGrip] = useState(true);
+  const [locked, setLocked] = useState(false);
+  const [controls, setControls] = useState(true);
+  const [steps, setSteps] = useState(2);
+  const [nodeTone, setNodeTone] = useState<InheritedTone>("inherit");
+
+  return (
+    <PreviewShell
+      tall
+      controls={
+        <>
+          <ControlSection title="Group">
+            <SelectControl
+              label="size"
+              value={size}
+              onValueChange={setSize}
+              options={GROUP_SIZES}
+            />
+            <SelectControl
+              label="tone"
+              value={tone}
+              onValueChange={setTone}
+              options={GRAPH_TONES}
+            />
+            <BooleanControl
+              label="empty"
+              checked={empty}
+              onCheckedChange={setEmpty}
+            />
+          </ControlSection>
+          <ControlSection title="Tag">
+            <BooleanControl
+              label="grip"
+              checked={grip}
+              onCheckedChange={setGrip}
+            />
+            <BooleanControl
+              label="locked"
+              checked={locked}
+              onCheckedChange={setLocked}
+            />
+            <BooleanControl
+              label="controls"
+              checked={controls}
+              onCheckedChange={setControls}
+            />
+          </ControlSection>
+          <ControlSection title="Nodes">
+            <NumberControl
+              label="nodes"
+              value={steps}
+              onChange={setSteps}
+              min={1}
+              max={GROUP_STEPS.length}
+            />
+            <SelectControl
+              label="node tone"
+              value={nodeTone}
+              onValueChange={setNodeTone}
+              options={INHERITED_TONES}
+            />
+          </ControlSection>
+        </>
+      }
+    >
+      <NodeGroup size={size} tone={tone} empty={empty}>
+        <NodeGroupTag>
+          <NodeGroupHandle>
+            {grip && <GripVerticalIcon aria-hidden />}
+            <NodeGroupTitle>Book it</NodeGroupTitle>
+            {locked && <LockIcon role="img" aria-label="Locked group" />}
+          </NodeGroupHandle>
+          {controls && (
+            <>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="rounded-full"
+                aria-label="Add a step to Book it"
+              >
+                <PlusIcon />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="rounded-full"
+                aria-label="Options for Book it"
+              >
+                <EllipsisIcon />
+              </Button>
+            </>
+          )}
+        </NodeGroupTag>
+        <NodeGroupIsland className="grid-flow-col items-start gap-10">
+          {empty ? (
+            <NodeGroupEmpty>
+              <NodeGroupAdd aria-label="Add a step to Book it" />
+              Add a step, or drop one here
+            </NodeGroupEmpty>
+          ) : (
+            GROUP_STEPS.slice(0, steps).map((step) => (
+              <Node key={step.title} size="sm" tone={toneProp(nodeTone)}>
+                <NodeCard>
+                  <NodeHeader>
+                    <NodeTitle>{step.title}</NodeTitle>
+                    <NodeDescription className="text-tone-ink">
+                      {step.kind}
+                    </NodeDescription>
+                  </NodeHeader>
+                  <NodeConnectorsLeft>
+                    <NodeConnector>
+                      <NodeConnectorPort />
+                    </NodeConnector>
+                  </NodeConnectorsLeft>
+                  <NodeContent>
+                    <NodeDescription>One step of the call.</NodeDescription>
+                  </NodeContent>
+                  <NodeConnectorsRight>
+                    <NodeConnector>
+                      <NodeConnectorPort />
+                    </NodeConnector>
+                  </NodeConnectorsRight>
+                </NodeCard>
+              </Node>
+            ))
+          )}
+        </NodeGroupIsland>
+      </NodeGroup>
     </PreviewShell>
   );
 }

@@ -581,6 +581,114 @@
       "categories": ["voice"]
     },
     {
+      "name": "graph",
+      "type": "registry:component",
+      "title": "Graph",
+      "description": "The container a graph's nodes share, and the palette they colour themselves from: eight tones taken from Tailwind's colours, each one variable, with soft, mid and ink shades mixed from it. Add a tone of your own by naming a variable. A stub for now: the canvas and wires come later.",
+      "dependencies": ["@base-ui/react@^1.8.0"],
+      "files": [
+        {
+          "path": "src/components/graph/graph.tsx",
+          "type": "registry:component",
+          "target": "components/pipecat/graph/graph.tsx"
+        }
+      ],
+      "cssVars": {
+        "theme": {
+          "color-tone": "var(--tone)",
+          "color-tone-soft": "var(--tone-soft, color-mix(in oklab, var(--tone) 14%, var(--card)))",
+          "color-tone-mid": "var(--tone-mid, color-mix(in oklab, var(--tone) 45%, var(--card)))",
+          "color-tone-ink": "var(--tone-ink, color-mix(in oklab, var(--tone) 55%, var(--foreground)))"
+        },
+        "light": {
+          "tone": "var(--graph-neutral)",
+          "graph-neutral": "var(--muted-foreground)",
+          "graph-blue": "var(--color-blue-600)",
+          "graph-purple": "var(--color-violet-600)",
+          "graph-amber": "var(--color-amber-600)",
+          "graph-green": "var(--color-emerald-600)",
+          "graph-pink": "var(--color-pink-600)",
+          "graph-coral": "var(--color-orange-600)",
+          "graph-red": "var(--color-red-600)"
+        },
+        "dark": {
+          "tone": "var(--graph-neutral)",
+          "graph-neutral": "var(--muted-foreground)",
+          "graph-blue": "var(--color-blue-400)",
+          "graph-purple": "var(--color-violet-400)",
+          "graph-amber": "var(--color-amber-400)",
+          "graph-green": "var(--color-emerald-400)",
+          "graph-pink": "var(--color-pink-400)",
+          "graph-coral": "var(--color-orange-400)",
+          "graph-red": "var(--color-red-400)"
+        }
+      },
+      "docs": "Wrap a graph's nodes in Graph. A tone prop on Graph, Node or NodeConnector puts a palette colour in scope; style from it with bg-tone, bg-tone-soft, bg-tone-mid and text-tone-ink. Change a tone by editing its --graph-* variable in your CSS, or add one: define --graph-<name> and use tone=\"<name>\".",
+      "categories": ["graph"]
+    },
+    {
+      "name": "graph-node",
+      "type": "registry:component",
+      "title": "Graph Node",
+      "description": "The parts of a node for graph and flow editors, as plain markup: a box, a card, header, content and footer, with room on either side for connectors. Four sizes, fixed and fluid widths, palette tones and a subflow variant. No canvas, wires or script.",
+      "dependencies": [
+        "@base-ui/react@^1.8.0",
+        "class-variance-authority@^0.7.1",
+        "lucide-react@^1.41.0"
+      ],
+      "registryDependencies": ["button", "@pipecat/graph"],
+      "files": [
+        {
+          "path": "src/components/graph/node.tsx",
+          "type": "registry:component",
+          "target": "components/pipecat/graph/node.tsx"
+        }
+      ],
+      "docs": "Compose Node > NodeCard > NodeHeader, NodeContent and NodeFooter; add connectors with @pipecat/graph-node-connector. Node is a size container: give it a width with size, or fluid to fill its parent. Give a node a tone to colour it from the graph palette. Restyle through className and the --node-* variables; every part takes Base UI's render prop.",
+      "categories": ["graph"]
+    },
+    {
+      "name": "graph-node-connector",
+      "type": "registry:component",
+      "title": "Graph Node Connector",
+      "description": "Connector areas for the left and right edges of a graph node: rows of ports, with or without labels. A port is a circle or a diamond, outlined, dashed or solid, shows a halo on hover, and takes the node's tone or one of its own.",
+      "dependencies": [
+        "@base-ui/react@^1.8.0",
+        "class-variance-authority@^0.7.1"
+      ],
+      "registryDependencies": ["@pipecat/graph", "@pipecat/graph-node"],
+      "files": [
+        {
+          "path": "src/components/graph/node-connector.tsx",
+          "type": "registry:component",
+          "target": "components/pipecat/graph/node-connector.tsx"
+        }
+      ],
+      "docs": "Put NodeConnectorsLeft or NodeConnectorsRight in a Node, with one NodeConnector per row holding a NodeConnectorPort and an optional NodeConnectorLabel. Size connectors with the --node-connector-* variables on the area.",
+      "categories": ["graph"]
+    },
+    {
+      "name": "graph-node-group",
+      "type": "registry:component",
+      "title": "Graph Node Group",
+      "description": "A group of graph nodes, as plain markup: a tinted island around them and a name tag on its top edge with a drag handle and room for controls. Four sizes, palette tones, and an empty state with an add button in the group's tone. It hugs the nodes inside it, or takes its size from a canvas.",
+      "dependencies": [
+        "@base-ui/react@^1.8.0",
+        "class-variance-authority@^0.7.1",
+        "lucide-react@^1.41.0"
+      ],
+      "registryDependencies": ["button", "@pipecat/graph"],
+      "files": [
+        {
+          "path": "src/components/graph/node-group.tsx",
+          "type": "registry:component",
+          "target": "components/pipecat/graph/node-group.tsx"
+        }
+      ],
+      "docs": "Compose NodeGroup > NodeGroupTag (NodeGroupHandle, NodeGroupTitle, your buttons) and NodeGroupIsland around the nodes. On a canvas, give NodeGroup a position and size and leave the island bare; put the tag in a second NodeGroup to draw it over the nodes. Size it with the --node-group-* variables.",
+      "categories": ["graph"]
+    },
+    {
       "name": "metrics",
       "type": "registry:block",
       "title": "Metrics",

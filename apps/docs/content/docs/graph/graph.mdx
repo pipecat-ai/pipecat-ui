@@ -1,0 +1,126 @@
+---
+title: Graph
+description: The container a graph's nodes share, and the palette they take their tones from. A stub for now — the canvas and wires come later.
+storybook: "/storybook/?path=/story/graph-graph--palette"
+---
+
+<GraphPreview />
+
+## Installation
+
+<InstallTabs name="graph" />
+
+Installing it adds the palette to your theme: a `--graph-*` variable for each tone, and
+the `tone` colours for Tailwind.
+
+## Usage
+
+```tsx
+import { Graph } from "@/components/pipecat/graph/graph";
+import { Node } from "@/components/pipecat/graph/node";
+
+<Graph>
+  <Node tone="green">…</Node>
+  <Node tone="purple" variant="subflow">
+    …
+  </Node>
+</Graph>;
+```
+
+`Graph` is the element a graph's nodes sit in. Today it does two things: it can set the
+tone everything inside starts from, and it is where one graph changes the palette. The
+canvas and wires will build on it.
+
+## Tones
+
+A tone is a named colour. Give `tone` to `Graph`, a
+[`NodeGroup`](/docs/graph/graph-node-group), a [`Node`](/docs/graph/graph-node) or a
+[`NodeConnector`](/docs/graph/graph-node-connector), and that element and everything
+inside it is in that tone until something inside names another:
+
+```tsx
+<Node tone="green">
+  {/* Green, from the node. */}
+  <NodeConnector>…</NodeConnector>
+  {/* Coral, its own. */}
+  <NodeConnector tone="coral">…</NodeConnector>
+</Node>
+```
+
+Parts never name a colour. They use four utilities that read the tone in scope, and so
+can your own content:
+
+| Utility         | Is                                              | Used for                        |
+| --------------- | ----------------------------------------------- | ------------------------------- |
+| `bg-tone`       | The tone itself.                                | A port's ring, a filled port.   |
+| `bg-tone-mid`   | The tone, part-way to the card colour.          | The stack behind a subflow.     |
+| `bg-tone-soft`  | A tint of the tone on the card colour.          | A group's island, icon tiles.   |
+| `text-tone-ink` | The tone, darkened or lightened until it reads. | Kind words, icons, tinted text. |
+
+Any of them works as a text, border, ring or fill colour: `border-tone`, `text-tone-ink`,
+`ring-tone/40`.
+
+## The palette
+
+Each tone is a variable named after it, set to one of Tailwind's colours: the 600 in
+light, the 400 in dark, so a port's ring stands out from the card in both.
+
+| Tone      | Variable          | Colour               |
+| --------- | ----------------- | -------------------- |
+| `neutral` | `--graph-neutral` | `--muted-foreground` |
+| `blue`    | `--graph-blue`    | `blue`               |
+| `purple`  | `--graph-purple`  | `violet`             |
+| `amber`   | `--graph-amber`   | `amber`              |
+| `green`   | `--graph-green`   | `emerald`            |
+| `pink`    | `--graph-pink`    | `pink`               |
+| `coral`   | `--graph-coral`   | `orange`             |
+| `red`     | `--graph-red`     | `red`                |
+
+With no tone set anywhere, everything is `neutral`.
+
+### A tone of your own
+
+A tone is only a name. Define `--graph-<name>` where your theme lives and use the name:
+
+```css
+:root {
+  --graph-brand: var(--color-teal-600);
+}
+.dark {
+  --graph-brand: var(--color-teal-400);
+}
+```
+
+```tsx
+<Graph tone="brand">…</Graph>
+```
+
+That one variable is enough: the mid, soft and ink shades are mixed from it and your
+theme's `--card` and `--foreground`, so they follow light and dark. To choose a shade
+yourself, define it beside the colour, for as many of the three as you want:
+
+```css
+:root {
+  --graph-brand: var(--color-teal-600);
+  --graph-brand-mid: var(--color-teal-300);
+  --graph-brand-soft: var(--color-teal-100);
+  --graph-brand-ink: var(--color-teal-800);
+}
+```
+
+The tones that ship work the same way, so the same variables retune them:
+`--graph-green`, `--graph-green-soft` and so on. Set one on a `Graph` to change it for
+that graph alone:
+
+```tsx
+<Graph className="[--graph-green:var(--color-lime-600)]">…</Graph>
+```
+
+A name with no `--graph-<name>` variable falls back to `neutral`.
+
+## Key props
+
+| Prop     | Type                        | Description                                                     |
+| -------- | --------------------------- | --------------------------------------------------------------- |
+| `tone`   | a palette tone, or your own | The tone everything inside takes until something names its own. |
+| `render` | `ReactElement \| function`  | Render the container as another element.                        |

@@ -1,0 +1,196 @@
+---
+title: Node
+description: The parts of a graph node as plain markup — a box, a card, header, content and footer — in four sizes, fixed or fluid, with room on either side for connectors.
+storybook: "/storybook/?path=/story/graph-node--basic"
+---
+
+<GraphNodePreview />
+
+## Installation
+
+<InstallTabs name="graph-node" />
+
+This installs [Graph](/docs/graph/graph) too, for the palette a node takes its tone
+from.
+
+## Usage
+
+```tsx
+import {
+  Node,
+  NodeCard,
+  NodeContent,
+  NodeFooter,
+  NodeHeader,
+  NodeTitle,
+} from "@/components/pipecat/graph/node";
+
+<Node size="md">
+  <NodeCard>
+    <NodeHeader>
+      <NodeTitle>Book appointment</NodeTitle>
+    </NodeHeader>
+    <NodeContent>Holds the slot the caller chose.</NodeContent>
+    <NodeFooter>needs patient · slot</NodeFooter>
+  </NodeCard>
+</Node>;
+```
+
+The node is markup and CSS only. It draws no wires, measures nothing and holds no state:
+a canvas, a wire layer or a drag library sits around it. Ports go on its edges with
+[Node Connector](/docs/graph/graph-node-connector).
+
+## Parts
+
+| Part                                         | What it is                                                                            |
+| -------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `Node`                                       | The node's box: its width, its scale and the tracks the parts sit on. Paints nothing. |
+| `NodeCard`                                   | The surface: background, radius, ring.                                                |
+| `NodeHeader`, `NodeContent`, `NodeFooter`    | The three rows. Leave any of them out and its row closes up.                          |
+| `NodeTitle`, `NodeDescription`, `NodeAction` | Text and trailing controls, for a header or a footer.                                 |
+| `NodeExpand`                                 | The button that opens a subflow, for `NodeAction`.                                    |
+
+Parts are placed by name, so their order in the markup doesn't matter, and a node takes one
+of each. The middle row has a column on either side of the content for
+[connectors](/docs/graph/graph-node-connector), and is as tall as the content or the
+connectors, whichever is taller, so a node with six outputs grows to fit them without any
+arithmetic.
+
+Anything else you put in `Node` or `NodeCard`, such as a badge or a selection ring,
+should be absolutely positioned so it stays out of the tracks.
+
+### Why a box and a card
+
+`Node` is the part a canvas positions and measures; `NodeCard` is the part people see.
+Keeping them apart lets the card animate without moving the box. The card is a subgrid of
+the node, so a connector area lines up with the content whether it is inside the card or
+beside it:
+
+```tsx
+<Node>
+  <NodeCard render={<motion.div whileHover={{ scale: 1.05 }} />}>
+    <NodeHeader>…</NodeHeader>
+    <NodeContent>…</NodeContent>
+  </NodeCard>
+  {/* Outside the card: the ports hold still while the card lifts. */}
+  <NodeConnectorsRight>…</NodeConnectorsRight>
+</Node>
+```
+
+Leave the card's overflow visible. Ports straddle its edge, so clipping the card cuts them
+in half; a tinted header follows the corners on its own.
+
+## Sizes and width
+
+`size` sets the node's width, padding and type together, and its connectors follow.
+
+| Size | Width | Title | Port |
+| ---- | ----- | ----- | ---- |
+| `sm` | 12rem | 12px  | 10px |
+| `md` | 15rem | 14px  | 12px |
+| `lg` | 18rem | 16px  | 14px |
+| `xl` | 22rem | 18px  | 16px |
+
+A `fluid` node fills its parent instead, and its width is all that changes: the content
+takes up the slack, while type, padding and both connector areas stay as `size` set them.
+
+```tsx
+<div className="w-96">
+  <Node fluid>…</Node>
+</div>
+```
+
+`Node` is a size container named `node`, so content can respond to the node's width in
+steps with `@sm/node:` variants. Being a container, it takes its width from `size` or from
+its parent, never from its content.
+
+## Tones
+
+`tone` colours a node from the [graph palette](/docs/graph/graph#the-palette). Its
+connectors take the tone, and so does anything you style with the tone utilities:
+
+```tsx
+<Node tone="green">
+  <NodeCard>
+    <NodeHeader>
+      <NodeDescription className="text-tone-ink">Book</NodeDescription>
+    </NodeHeader>
+    <NodeContent>
+      <span className="bg-tone-soft text-tone-ink grid size-14 place-items-center rounded-2xl">
+        <CalendarClockIcon />
+      </span>
+    </NodeContent>
+  </NodeCard>
+</Node>
+```
+
+A node with no `tone` takes the one around it: its graph's, or `neutral`.
+
+## Subflows
+
+A node that stands for a graph of its own is a `subflow`. The variant draws a stack of
+cards behind the node, in its tone. `NodeExpand` is its open button: you place it,
+because it needs a name and something to do.
+
+```tsx
+<Node variant="subflow" tone="purple">
+  <NodeCard>
+    <NodeHeader>
+      <NodeTitle>Scheduling</NodeTitle>
+      <NodeAction>
+        <NodeExpand aria-label="Open Scheduling" onClick={open} />
+      </NodeAction>
+    </NodeHeader>
+  </NodeCard>
+</Node>
+```
+
+The stack hangs below the node's box and takes no room in the layout. Give a subflow's
+ports the `diamond` [shape](/docs/graph/graph-node-connector#ports) to mark them as links
+into another graph.
+
+## Styling
+
+Each part takes `className`, and a class you pass replaces the default it conflicts with.
+Geometry lives in variables on `Node`:
+
+| Variable                  | Sets                                              |
+| ------------------------- | ------------------------------------------------- |
+| `--node-width`            | A fixed node's width.                             |
+| `--node-px`               | Inline padding of the header, content and footer. |
+| `--node-py`               | Block padding, and the space between rows.        |
+| `--node-gap`              | Space between items inside a part.                |
+| `--node-radius`           | The card's corner radius.                         |
+| `--node-text`             | Body text: the content and the footer.            |
+| `--node-text-header`      | Text in the header.                               |
+| `--node-text-description` | Descriptions, wherever they sit.                  |
+
+Connectors keep [their own variables](/docs/graph/graph-node-connector#styling).
+
+```tsx
+<Node className="[--node-px:--spacing(4)] [--node-radius:--spacing(6.5)]">
+  <NodeCard className="shadow-lg ring-0">…</NodeCard>
+</Node>
+```
+
+Every length but the radius is in steps of Tailwind's `--spacing`, so setting `--spacing`
+on a node rescales it and whatever is inside it. The radius comes from your theme's
+`--radius` unless you give it in steps, as above.
+
+Every part carries a `data-slot` (`node`, `node-card`, `node-header` and so on). `Node`
+also carries `data-size`, `data-variant`, `data-fluid` and `data-tone`. Other state is
+yours to add: put `data-selected` or `aria-disabled` on `Node` and style any part from
+it with `group-data-selected/node:`.
+
+Every part also takes Base UI's `render` prop, to become a `motion.div`, a `<section>` or a
+link while keeping its slot, classes and handlers.
+
+## Key props
+
+| Prop      | On         | Type                           | Description                                                 |
+| --------- | ---------- | ------------------------------ | ----------------------------------------------------------- |
+| `size`    | Node       | `"sm" \| "md" \| "lg" \| "xl"` | Width, padding and type. Default `md`.                      |
+| `fluid`   | Node       | `boolean`                      | Fill the parent's width. Nothing else changes size.         |
+| `variant` | Node       | `"default" \| "subflow"`       | `subflow` draws a stack of cards behind the node.           |
+| `tone`    | Node       | a palette tone, or your own    | The tone the node's parts and connectors take.              |
+| `render`  | Every part | `ReactElement \| function`     | Render the part as another element, keeping its attributes. |

@@ -1,0 +1,5 @@
+{
+  "title": "Graph",
+  "defaultOpen": true,
+  "pages": ["graph", "graph-node", "graph-node-connector", "graph-node-group"]
+}

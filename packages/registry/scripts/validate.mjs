@@ -275,7 +275,9 @@ export function validateRegistry(
           ? "blocks"
           : item.name.startsWith("audio-visualizer-")
             ? "visualizers"
-            : "components";
+            : item.name === "graph" || item.name.startsWith("graph-")
+              ? "graph"
+              : "components";
     assert(
       fs.existsSync(
         path.join(

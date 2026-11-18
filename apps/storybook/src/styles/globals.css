@@ -157,6 +157,19 @@
   --color-agent-foreground: var(--agent-foreground);
   --color-client: var(--client-background);
   --color-client-foreground: var(--client-foreground);
+  --color-tone: var(--tone);
+  --color-tone-soft: var(
+    --tone-soft,
+    color-mix(in oklab, var(--tone) 14%, var(--card))
+  );
+  --color-tone-mid: var(
+    --tone-mid,
+    color-mix(in oklab, var(--tone) 45%, var(--card))
+  );
+  --color-tone-ink: var(
+    --tone-ink,
+    color-mix(in oklab, var(--tone) 55%, var(--foreground))
+  );
 }
 
 :root {
@@ -168,6 +181,15 @@
   --agent-foreground: oklch(0.585 0.233 277.117);
   --client-background: oklch(0.97 0.014 254.604);
   --client-foreground: oklch(0.623 0.214 259.815);
+  --tone: var(--graph-neutral);
+  --graph-neutral: var(--muted-foreground);
+  --graph-blue: var(--color-blue-600);
+  --graph-purple: var(--color-violet-600);
+  --graph-amber: var(--color-amber-600);
+  --graph-green: var(--color-emerald-600);
+  --graph-pink: var(--color-pink-600);
+  --graph-coral: var(--color-orange-600);
+  --graph-red: var(--color-red-600);
 }
 
 .dark {
@@ -179,4 +201,13 @@
   --agent-foreground: oklch(0.585 0.233 277.117);
   --client-background: oklch(0.19 0.045 259.815);
   --client-foreground: oklch(0.623 0.214 259.815);
+  --tone: var(--graph-neutral);
+  --graph-neutral: var(--muted-foreground);
+  --graph-blue: var(--color-blue-400);
+  --graph-purple: var(--color-violet-400);
+  --graph-amber: var(--color-amber-400);
+  --graph-green: var(--color-emerald-400);
+  --graph-pink: var(--color-pink-400);
+  --graph-coral: var(--color-orange-400);
+  --graph-red: var(--color-red-400);
 }
