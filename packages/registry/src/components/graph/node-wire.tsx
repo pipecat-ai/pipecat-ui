@@ -62,7 +62,10 @@ function gutterBetween(source: Span, target: Span) {
   return Math.max(source.bottom, target.bottom) + UNDERPASS;
 }
 
-/** The control points of a wire from `source` to `target`. */
+/**
+ * The control points of a wire from `source` to `target`. It leaves heading
+ * right and arrives from the left, whichever way the ports face.
+ */
 export function wireShape(
   source: Point,
   target: Point,

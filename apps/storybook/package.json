@@ -25,7 +25,6 @@
     "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
-    "@pipecat-ui/registry": "workspace:*",
     "@storybook/react-vite": "^10.6.0",
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/dom": "^10.4.1",
@@ -36,6 +35,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
+    "@pipecat-ui/registry": "workspace:*",
     "jsdom": "^30.0.1",
     "storybook": "^10.6.0",
     "tailwindcss": "^4.3.3",

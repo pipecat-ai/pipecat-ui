@@ -182,6 +182,29 @@ describe("separateGroups", () => {
     expect(x("d") - x("c")).toBeGreaterThanOrEqual(240 + gap);
   });
 
+  it("goes by the size a group was just boxed to, not the one last measured", () => {
+    // On the canvas a group still carries its old measurement when it is boxed.
+    const measured = (node: Node, width: number, height: number) => ({
+      ...node,
+      measured: { width, height },
+    });
+    const nodes = [
+      measured(group("a", 0, 0), 288, 192),
+      step("a1", "a", 24, 48),
+      step("a2", "a", 48, 48),
+      step("a3", "a", 72, 48),
+      measured(group("b", 480, 0, [240, 168]), 240, 168),
+    ];
+    const boxed = boxGroups(lineUpGroups(nodes, GRID, "horizontal"), GRID);
+    const a = find(boxed, "a");
+    // Three nodes in a row: 24 + 192 + 72 + 192 + 72 + 192 + 24 wide.
+    expect([a.width, a.height]).toEqual([768, 168]);
+
+    // `b` sat inside the wider `a`, and the shortest way clear of it is down.
+    const parted = separateGroups(boxed, ["a"], GRID);
+    expect(find(parted, "b").position).toEqual({ x: 480, y: 168 + gap });
+  });
+
   it("returns the same nodes when nothing has to move", () => {
     const nodes = [
       group("a", 0, 0, [240, 168]),

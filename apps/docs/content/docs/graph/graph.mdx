@@ -75,8 +75,9 @@ or on one graph:
 ## Groups
 
 A group is a React Flow node with children: nodes whose `parentId` is its id, placed
-relative to it. Dragging the group carries them. Two props keep groups in shape, each
-when a drag ends and once when the graph first appears.
+relative to it. Dragging the group carries them. Two props keep groups in shape: once
+when the graph first appears, then whenever a drag ends or a node inside a group changes
+size.
 
 **`packGrid`** fits groups to the grid:
 
@@ -85,7 +86,8 @@ when a drag ends and once when the graph first appears.
   dragged in.
 - **Spacing.** No two groups sit closer than `groupGap` cells: three by default, and `0`
   lets them touch. The group you dropped stays where you put it, the ones in its way
-  glide aside, and a node outside any group is moved out of the way too.
+  glide aside, and a node outside any group is moved out of the way too. A group that
+  grew with one of its nodes holds its place the same way.
 
 **`packGroups`** lays out the nodes inside each group, and boxes the group around them:
 

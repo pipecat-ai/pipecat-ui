@@ -10,8 +10,8 @@ storybook: "/storybook/?path=/story/graph-node-wire--basic"
 
 <InstallTabs name="graph-node-wire" />
 
-This installs [Graph](/docs/graph/graph) too, and adds [Motion](https://motion.dev), which
-drives the wire's springs.
+This installs [Graph](/docs/graph/graph) too, the canvas a wire is drawn on, and adds
+[Motion](https://motion.dev), which drives the wire's springs.
 
 ## Usage
 
@@ -51,6 +51,11 @@ being dragged out of a port. Keep `edgeTypes` outside your component, as React F
 A wire leaves its source port, arrives at its target, and carries a dot drifting along
 it. One that runs back to an earlier node hooks out to the right, travels underneath and
 hooks in from the left.
+
+Wires read left to right. One always leaves its source heading right and arrives at its
+target from the left, whatever `Position` its handles have, so put a node's outputs on
+its right edge and its inputs on its left. A handle on the top or bottom still connects,
+but the wire meets it sideways.
 
 What it looks like comes from the edge's `data`:
 

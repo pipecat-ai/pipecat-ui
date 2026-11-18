@@ -8,9 +8,11 @@ import {
   ReactFlow,
   type ReactFlowInstance,
   type ReactFlowProps,
+  type ReactFlowState,
   type XYPosition,
   useNodesInitialized,
   useReactFlow,
+  useStore,
 } from "@xyflow/react";
 import { animate } from "motion/react";
 import { useEffect, useRef } from "react";
@@ -127,7 +129,24 @@ type ArrangementProps = Required<
   Pick<ArrangeOptions, "grid" | "groups" | "separate" | "gap">
 > & { glideRef: React.RefObject<Glide | null> };
 
-/** Arranges the groups once the nodes are measured, and again when an option changes. */
+type Sizes = Map<string, string>;
+
+/** The measured size of every node inside a group, by its id. */
+function childSizes({ nodeLookup }: ReactFlowState) {
+  const sizes: Sizes = new Map();
+  for (const [id, node] of nodeLookup)
+    if (node.parentId !== undefined)
+      sizes.set(id, `${node.measured.width}x${node.measured.height}`);
+  return sizes;
+}
+
+const sameSizes = (a: Sizes, b: Sizes) =>
+  a.size === b.size && [...a].every(([id, size]) => b.get(id) === size);
+
+/**
+ * Arranges the groups once the nodes are measured, and again when an option
+ * changes or a node inside a group changes size.
+ */
 function Arrangement({
   glideRef,
   grid,
@@ -137,13 +156,25 @@ function Arrangement({
 }: ArrangementProps) {
   const flow = useReactFlow();
   const measured = useNodesInitialized();
+  const sizes = useStore(childSizes, sameSizes);
+  const arranged = useRef<Sizes | null>(null);
   // React Flow measures nodes outside React, so this has to wait for it.
   useEffect(() => {
     if (!measured) return;
-    const glide = arrangeGroups(flow, { grid, groups, separate, gap });
+    const before = arranged.current;
+    arranged.current = sizes;
+    // A drag arranges the groups itself, when it ends.
+    if (flow.getNodes().some((node) => node.dragging)) return;
+    // The group of a node that changed size stays put, and the rest make room.
+    const anchors: string[] = [];
+    for (const [id, size] of before ? sizes : []) {
+      const group = flow.getNode(id)?.parentId;
+      if (group !== undefined && before?.get(id) !== size) anchors.push(group);
+    }
+    const glide = arrangeGroups(flow, { grid, groups, separate, gap, anchors });
     glideRef.current = glide;
     return () => glide?.stop();
-  }, [flow, glideRef, grid, groups, separate, gap, measured]);
+  }, [flow, glideRef, grid, groups, separate, gap, measured, sizes]);
   return null;
 }
 

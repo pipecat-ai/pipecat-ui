@@ -14,10 +14,11 @@ const MAX_PUSHES = 200;
 /** Room a group leaves around its nodes, in whole cells. The top is deeper, for its tag. */
 const padding = (grid: number) => ({ x: grid, top: grid * 2, bottom: grid });
 
+/** A size a node was given comes first: React Flow's measurement of it lags a render behind. */
 function sizeOf(node: Node) {
   return {
-    width: node.measured?.width ?? node.width ?? node.initialWidth ?? 0,
-    height: node.measured?.height ?? node.height ?? node.initialHeight ?? 0,
+    width: node.width ?? node.measured?.width ?? node.initialWidth ?? 0,
+    height: node.height ?? node.measured?.height ?? node.initialHeight ?? 0,
   };
 }
 
