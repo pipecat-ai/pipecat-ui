@@ -8,7 +8,7 @@ import { PlusIcon } from "lucide-react";
 import {
   type GraphTone,
   graphToneStyle,
-} from "@/components/pipecat/graph/graph";
+} from "@/components/pipecat/graph/tone";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -198,7 +198,13 @@ export function NodeGroupEmpty({
   });
 }
 
-export type NodeGroupAddProps = React.ComponentProps<typeof Button>;
+/** An icon-only button needs a name: one of these has to be given. */
+type Named =
+  | { "aria-label": string }
+  | { "aria-labelledby": string }
+  | { children: React.ReactNode };
+
+export type NodeGroupAddProps = React.ComponentProps<typeof Button> & Named;
 
 /**
  * The button an empty group starts from, in the group's tone: dashed at rest,
@@ -221,7 +227,7 @@ export function NodeGroupAdd({
         "hover:bg-tone-mid/40 hover:text-tone-ink hover:border-solid",
         "aria-expanded:bg-tone aria-expanded:text-card aria-expanded:border-solid",
         // The stock outline button turns grey in dark mode; this one keeps its tone.
-        "dark:border-tone dark:bg-card dark:hover:bg-tone-mid/40",
+        "dark:border-tone dark:bg-card dark:hover:bg-tone-mid/40 dark:aria-expanded:bg-tone",
         className,
       )}
     >

@@ -1,53 +1,194 @@
-import { render, screen } from "@testing-library/react";
+import type { Node } from "@xyflow/react";
 import { describe, expect, it } from "vitest";
 
-import { Graph, graphToneStyle } from "@/components/pipecat/graph/graph";
+import {
+  boxGroups,
+  lineUpGroups,
+  separateGroups,
+} from "@/components/pipecat/graph/group-layout";
 
-const graph = (container: HTMLElement) =>
-  container.querySelector<HTMLElement>('[data-slot="graph"]');
-const tone = (element: HTMLElement | null, shade = "") =>
-  element?.style.getPropertyValue(`--tone${shade}`);
+const GRID = 24;
 
-describe("Graph", () => {
-  it("puts a tone in scope by name, with the shades its palette may pin", () => {
-    const { container } = render(<Graph tone="green" />);
-    const element = graph(container);
-    expect(element).toHaveAttribute("data-tone", "green");
-    expect(tone(element)).toBe("var(--graph-green, var(--graph-neutral))");
-    expect(tone(element, "-soft")).toBe("var(--graph-green-soft)");
-    expect(tone(element, "-mid")).toBe("var(--graph-green-mid)");
-    expect(tone(element, "-ink")).toBe("var(--graph-green-ink)");
-  });
+const group = (id: string, x: number, y: number, size?: number[]): Node => ({
+  id,
+  type: "group",
+  position: { x, y },
+  width: size?.[0],
+  height: size?.[1],
+  data: {},
+});
+const step = (id: string, parentId: string | undefined, x: number, y: number) =>
+  ({
+    id,
+    parentId,
+    position: { x, y },
+    measured: { width: 192, height: 96 },
+    data: {},
+  }) satisfies Node;
 
-  it("takes a tone of your own the same way", () => {
-    const { container } = render(<Graph tone="brand" />);
-    expect(tone(graph(container))).toBe(
-      "var(--graph-brand, var(--graph-neutral))",
+const find = (nodes: Node[], id: string) => {
+  const node = nodes.find((item) => item.id === id);
+  if (!node) throw new Error(`no node ${id}`);
+  return node;
+};
+
+describe("boxGroups", () => {
+  it("sizes a group around its children, a cell clear and two on top", () => {
+    const boxed = boxGroups(
+      [group("g", 0, 0), step("a", "g", 24, 48), step("b", "g", 288, 48)],
+      GRID,
     );
+    const g = find(boxed, "g");
+    expect(g.position).toEqual({ x: 0, y: 0 });
+    // 24 + 192 + 72 + 192 + 24 wide; 48 + 96 + 24 tall.
+    expect([g.width, g.height]).toEqual([504, 168]);
   });
 
-  it("inherits the tone when it is given none", () => {
-    const { container } = render(<Graph />);
-    expect(graph(container)).not.toHaveAttribute("data-tone");
-    expect(tone(graph(container))).toBe("");
-  });
-
-  it("ignores a tone that is not a plain name", () => {
-    expect(graphToneStyle("red); color: red; --x: (")).toBeUndefined();
-    expect(graphToneStyle("brand-2")).toBeDefined();
-  });
-
-  it("lets style replace the tone and renders as another element", () => {
-    render(
-      <Graph
-        tone="blue"
-        style={{ "--tone": "#f0603a" } as React.CSSProperties}
-        render={<section aria-label="Flow" />}
-      />,
+  it("moves the group, not what is on screen, when a child is dragged out", () => {
+    const boxed = boxGroups(
+      [group("g", 240, 120, [240, 168]), step("a", "g", -72, 0)],
+      GRID,
     );
-    const section = screen.getByRole("region", { name: "Flow" });
-    expect(section).toHaveAttribute("data-slot", "graph");
-    expect(tone(section)).toBe("#f0603a");
-    expect(tone(section, "-soft")).toBe("var(--graph-blue-soft)");
+    const g = find(boxed, "g");
+    const a = find(boxed, "a");
+    // The child was at 168,120 on the canvas and still is.
+    expect(g.position.x + a.position.x).toBe(168);
+    expect(g.position.y + a.position.y).toBe(120);
+    // The group's corner now sits a cell left of it and two cells above.
+    expect(g.position).toEqual({ x: 144, y: 72 });
+    expect(a.position).toEqual({ x: 24, y: 48 });
+  });
+
+  it("lands on the grid and leaves an empty group and loose nodes alone", () => {
+    const empty = group("empty", 10, 10, [288, 216]);
+    const loose = step("loose", undefined, 7, 7);
+    const boxed = boxGroups(
+      [group("g", 5, 5), step("a", "g", 30, 50), empty, loose],
+      GRID,
+    );
+    const g = find(boxed, "g");
+    expect(g.position.x % GRID).toBe(0);
+    expect(g.position.y % GRID).toBe(0);
+    expect((g.width ?? 0) % GRID).toBe(0);
+    expect(find(boxed, "empty")).toBe(empty);
+    expect(find(boxed, "loose")).toBe(loose);
+  });
+});
+
+describe("lineUpGroups", () => {
+  // Dropped out of order, at odd heights: b is leftmost and lowest.
+  const scattered = () => [
+    group("g", 0, 0),
+    step("a", "g", 300, 10),
+    step("b", "g", 20, 400),
+    step("c", "g", 310, 200),
+  ];
+  const at = (nodes: Node[], id: string) => find(nodes, id).position;
+
+  it("lines a group's nodes up in a row, by their tops, in the order they sit", () => {
+    const row = lineUpGroups(scattered(), GRID, "horizontal");
+    // A cell in and two down, then each node's width and three cells on.
+    expect(at(row, "b")).toEqual({ x: 24, y: 48 });
+    expect(at(row, "a")).toEqual({ x: 24 + 192 + 72, y: 48 });
+    expect(at(row, "c")).toEqual({ x: 24 + (192 + 72) * 2, y: 48 });
+  });
+
+  it("stacks them in a column, by their left edges, top to bottom", () => {
+    const column = lineUpGroups(scattered(), GRID, "vertical");
+    // Each node's height and two cells down.
+    expect(at(column, "a")).toEqual({ x: 24, y: 48 });
+    expect(at(column, "c")).toEqual({ x: 24, y: 48 + 96 + 48 });
+    expect(at(column, "b")).toEqual({ x: 24, y: 48 + (96 + 48) * 2 });
+  });
+
+  it("leaves the group and loose nodes where they are", () => {
+    const loose = step("loose", undefined, 5, 5);
+    const nodes = [...scattered(), loose];
+    const row = lineUpGroups(nodes, GRID, "horizontal");
+    expect(find(row, "g")).toBe(nodes[0]);
+    expect(find(row, "loose")).toBe(loose);
+  });
+});
+
+describe("separateGroups", () => {
+  const gap = GRID * 3;
+
+  it("pushes a crowded group the shortest way out, and leaves the anchor", () => {
+    const packed = separateGroups(
+      [group("a", 0, 0, [240, 168]), group("b", 192, 0, [240, 168])],
+      ["a"],
+      GRID,
+    );
+    expect(find(packed, "a").position).toEqual({ x: 0, y: 0 });
+    expect(find(packed, "b").position).toEqual({ x: 240 + gap, y: 0 });
+  });
+
+  it("keeps groups as many cells apart as it is asked to, down to touching", () => {
+    const nodes = [
+      group("a", 0, 0, [240, 168]),
+      group("b", 192, 0, [240, 168]),
+    ];
+    const x = (cells: number) =>
+      find(separateGroups(nodes, ["a"], GRID, cells), "b").position.x;
+    expect(x(0)).toBe(240);
+    expect(x(1)).toBe(240 + GRID);
+    expect(x(5)).toBe(240 + GRID * 5);
+
+    // With no gap, groups that only touch are left alone.
+    const touching = [
+      group("a", 0, 0, [240, 168]),
+      group("b", 240, 0, [240, 168]),
+    ];
+    expect(separateGroups(touching, ["a"], GRID, 0)[1]).toBe(touching[1]);
+  });
+
+  it("lets a pushed group push the next one along", () => {
+    const packed = separateGroups(
+      [
+        group("a", 0, 0, [240, 168]),
+        group("b", 192, 0, [240, 168]),
+        group("c", 480, 0, [240, 168]),
+      ],
+      ["a"],
+      GRID,
+    );
+    const b = find(packed, "b").position.x;
+    expect(find(packed, "c").position.x).toBe(b + 240 + gap);
+  });
+
+  it("moves a loose node out of a group's way, but never a group out of a node's", () => {
+    const nodes = [group("a", 0, 0, [240, 168]), step("n", undefined, 264, 24)];
+    const pushed = separateGroups(nodes, ["a"], GRID);
+    expect(find(pushed, "n").position.x).toBe(240 + gap);
+
+    const held = separateGroups(nodes, ["n"], GRID);
+    expect(find(held, "a").position).toEqual({ x: 0, y: 0 });
+    expect(find(held, "n").position).toEqual({ x: 264, y: 24 });
+  });
+
+  it("parts every crowded pair when nothing is anchored", () => {
+    const packed = separateGroups(
+      [
+        group("a", 0, 0, [240, 168]),
+        group("b", 96, 0, [240, 168]),
+        group("c", 2000, 0, [240, 168]),
+        group("d", 2096, 0, [240, 168]),
+      ],
+      [],
+      GRID,
+    );
+    const x = (id: string) => find(packed, id).position.x;
+    expect(x("b") - x("a")).toBeGreaterThanOrEqual(240 + gap);
+    expect(x("d") - x("c")).toBeGreaterThanOrEqual(240 + gap);
+  });
+
+  it("returns the same nodes when nothing has to move", () => {
+    const nodes = [
+      group("a", 0, 0, [240, 168]),
+      group("b", 480, 0, [240, 168]),
+    ];
+    const packed = separateGroups(nodes, ["a"], GRID);
+    expect(packed[0]).toBe(nodes[0]);
+    expect(packed[1]).toBe(nodes[1]);
   });
 });

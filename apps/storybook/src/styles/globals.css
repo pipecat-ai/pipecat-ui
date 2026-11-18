@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* pipecat-ui: React Flow, in the base layer so utilities can restyle it */
+@import "@xyflow/react/dist/base.css" layer(base);
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
@@ -6,6 +8,13 @@
 @custom-variant dark (&:is(.dark *));
 
 @source "../../../../packages/registry/src";
+
+/* pipecat-ui: the signal dot drifting along a graph wire */
+@keyframes wire-pulse {
+  to {
+    stroke-dashoffset: -56;
+  }
+}
 
 /* pipecat-ui: push-to-talk live outline pulse */
 @keyframes ptt-pulse {
@@ -157,19 +166,24 @@
   --color-agent-foreground: var(--agent-foreground);
   --color-client: var(--client-background);
   --color-client-foreground: var(--client-foreground);
-  --color-tone: var(--tone);
+  --color-tone: var(--tone, var(--graph-neutral));
   --color-tone-soft: var(
     --tone-soft,
-    color-mix(in oklab, var(--tone) 14%, var(--card))
+    color-mix(in oklab, var(--tone, var(--graph-neutral)) 14%, var(--card))
   );
   --color-tone-mid: var(
     --tone-mid,
-    color-mix(in oklab, var(--tone) 45%, var(--card))
+    color-mix(in oklab, var(--tone, var(--graph-neutral)) 45%, var(--card))
   );
   --color-tone-ink: var(
     --tone-ink,
-    color-mix(in oklab, var(--tone) 55%, var(--foreground))
+    color-mix(
+      in oklab,
+      var(--tone, var(--graph-neutral)) 55%,
+      var(--foreground)
+    )
   );
+  --animate-wire-pulse: wire-pulse 1.8s linear infinite;
 }
 
 :root {
@@ -181,7 +195,6 @@
   --agent-foreground: oklch(0.585 0.233 277.117);
   --client-background: oklch(0.97 0.014 254.604);
   --client-foreground: oklch(0.623 0.214 259.815);
-  --tone: var(--graph-neutral);
   --graph-neutral: var(--muted-foreground);
   --graph-blue: var(--color-blue-600);
   --graph-purple: var(--color-violet-600);
@@ -201,7 +214,6 @@
   --agent-foreground: oklch(0.585 0.233 277.117);
   --client-background: oklch(0.19 0.045 259.815);
   --client-foreground: oklch(0.623 0.214 259.815);
-  --tone: var(--graph-neutral);
   --graph-neutral: var(--muted-foreground);
   --graph-blue: var(--color-blue-400);
   --graph-purple: var(--color-violet-400);

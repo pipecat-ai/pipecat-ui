@@ -6,7 +6,6 @@ import {
   PlusIcon,
 } from "lucide-react";
 
-import { Graph, type GraphTone } from "@/components/pipecat/graph/graph";
 import {
   Node,
   NodeCard,
@@ -32,6 +31,7 @@ import {
   NodeGroupTag,
   NodeGroupTitle,
 } from "@/components/pipecat/graph/node-group";
+import type { GraphTone } from "@/components/pipecat/graph/tone";
 import { Button } from "@/components/ui/button";
 
 const SIZES = ["sm", "md", "lg", "xl"] as const;
@@ -168,7 +168,7 @@ export const Sizes: Story = {
 /** Nodes with no tone of their own take the group's. */
 export const Tones: Story = {
   render: (args) => (
-    <Graph className="flex flex-wrap items-start gap-x-8 gap-y-12 pt-6">
+    <div className="flex flex-wrap items-start gap-x-8 gap-y-12 pt-6">
       {TONES.map((tone) => (
         <NodeGroup key={tone} {...args} tone={tone}>
           <Tag name={tone} />
@@ -177,7 +177,7 @@ export const Tones: Story = {
           </NodeGroupIsland>
         </NodeGroup>
       ))}
-    </Graph>
+    </div>
   ),
 };
 
@@ -214,46 +214,6 @@ export const Locked: Story = {
 };
 
 /*
- * On a canvas the island goes under the nodes and the tag over them, so each
- * gets a root of its own, placed and sized by the canvas. The numbers here are
- * what a canvas would work out from its nodes.
- */
-const ISLAND = { left: 24, top: 40, width: 520, height: 216 };
-
-export const OnACanvas: Story = {
-  render: (args) => (
-    <Graph className="bg-muted/40 h-80 w-144 max-w-full overflow-hidden rounded-xl">
-      <NodeGroup
-        {...args}
-        className="pointer-events-none absolute"
-        style={ISLAND}
-      >
-        <NodeGroupIsland />
-      </NodeGroup>
-      <Step
-        title="Find a slot"
-        kind="Question"
-        className="absolute"
-        style={{ left: 48, top: 88 }}
-      />
-      <Step
-        title="Book it"
-        kind="Action"
-        className="absolute"
-        style={{ left: 304, top: 104 }}
-      />
-      <NodeGroup
-        {...args}
-        className="absolute"
-        style={{ left: ISLAND.left, top: ISLAND.top }}
-      >
-        <Tag name="Book it" />
-      </NodeGroup>
-    </Graph>
-  ),
-};
-
-/*
  * A client's look, built from className and the group's variables. The colours
  * stand in for a client theme; a real one sets them in its CSS.
  */
@@ -271,7 +231,7 @@ const THEME = {
 
 export const Restyled: Story = {
   render: (args) => (
-    <Graph
+    <div
       style={THEME}
       className="bg-background flex flex-wrap items-start gap-12 rounded-xl p-12"
     >
@@ -311,6 +271,6 @@ export const Restyled: Story = {
           </NodeGroupIsland>
         </NodeGroup>
       ))}
-    </Graph>
+    </div>
   ),
 };

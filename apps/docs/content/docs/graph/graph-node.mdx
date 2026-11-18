@@ -10,8 +10,8 @@ storybook: "/storybook/?path=/story/graph-node--basic"
 
 <InstallTabs name="graph-node" />
 
-This installs [Graph](/docs/graph/graph) too, for the palette a node takes its tone
-from.
+This installs [Tones](/docs/graph/graph-tone) too, the palette a node takes its tone from.
+It doesn't need a [Graph](/docs/graph/graph): a node is plain markup and works anywhere.
 
 ## Usage
 
@@ -36,35 +36,34 @@ import {
 </Node>;
 ```
 
-The node is markup and CSS only. It draws no wires, measures nothing and holds no state:
-a canvas, a wire layer or a drag library sits around it. Ports go on its edges with
-[Node Connector](/docs/graph/graph-node-connector).
+A node is markup and CSS: it draws no wires and holds no state. Ports go on its edges with
+[Node Connector](/docs/graph/graph-node-connector), and a [Graph](/docs/graph/graph) puts
+it on a canvas.
 
 ## Parts
 
-| Part                                         | What it is                                                                            |
-| -------------------------------------------- | ------------------------------------------------------------------------------------- |
-| `Node`                                       | The node's box: its width, its scale and the tracks the parts sit on. Paints nothing. |
-| `NodeCard`                                   | The surface: background, radius, ring.                                                |
-| `NodeHeader`, `NodeContent`, `NodeFooter`    | The three rows. Leave any of them out and its row closes up.                          |
-| `NodeTitle`, `NodeDescription`, `NodeAction` | Text and trailing controls, for a header or a footer.                                 |
-| `NodeExpand`                                 | The button that opens a subflow, for `NodeAction`.                                    |
+| Part                                      | What it is                                                                            |
+| ----------------------------------------- | ------------------------------------------------------------------------------------- |
+| `Node`                                    | The node's box: its width, its scale and the tracks the parts sit on. Paints nothing. |
+| `NodeCard`                                | The surface: background, radius, ring.                                                |
+| `NodeHeader`, `NodeContent`, `NodeFooter` | The three rows. Leave any of them out and its row closes up.                          |
+| `NodeTitle`, `NodeDescription`            | Text, for a header or a footer.                                                       |
+| `NodeAction`                              | Trailing controls in a header, beside the title.                                      |
+| `NodeExpand`                              | The button that opens a subflow, for `NodeAction`.                                    |
 
-Parts are placed by name, so their order in the markup doesn't matter, and a node takes one
-of each. The middle row has a column on either side of the content for
-[connectors](/docs/graph/graph-node-connector), and is as tall as the content or the
-connectors, whichever is taller, so a node with six outputs grows to fit them without any
-arithmetic.
+Parts are placed by name, so their order in the markup doesn't matter, and a node takes
+one of each. The middle row has a column either side of the content for
+[connectors](/docs/graph/graph-node-connector) and is as tall as whichever is taller, so
+a node grows to fit its outputs.
 
-Anything else you put in `Node` or `NodeCard`, such as a badge or a selection ring,
-should be absolutely positioned so it stays out of the tracks.
+Anything else you add, such as a badge or a selection ring, should be absolutely
+positioned so it stays out of the rows.
 
 ### Why a box and a card
 
-`Node` is the part a canvas positions and measures; `NodeCard` is the part people see.
-Keeping them apart lets the card animate without moving the box. The card is a subgrid of
-the node, so a connector area lines up with the content whether it is inside the card or
-beside it:
+`Node` is what a canvas positions and measures; `NodeCard` is what people see. Keeping
+them apart lets the card animate without moving the box, and connectors line up whether
+they sit inside the card or beside it:
 
 ```tsx
 <Node>
@@ -77,8 +76,8 @@ beside it:
 </Node>
 ```
 
-Leave the card's overflow visible. Ports straddle its edge, so clipping the card cuts them
-in half; a tinted header follows the corners on its own.
+Leave the card's overflow visible, since ports straddle its edge. Give a height to
+`Node`, not the card: the card fills the node's rows.
 
 ## Sizes and width
 
@@ -100,13 +99,13 @@ takes up the slack, while type, padding and both connector areas stay as `size` 
 </div>
 ```
 
-`Node` is a size container named `node`, so content can respond to the node's width in
-steps with `@sm/node:` variants. Being a container, it takes its width from `size` or from
-its parent, never from its content.
+`Node` is a size container named `node`, so content can respond to its width with
+`@sm/node:` variants. That also means it takes its width from `size` or its parent,
+never from its content.
 
 ## Tones
 
-`tone` colours a node from the [graph palette](/docs/graph/graph#the-palette). Its
+`tone` colours a node from the [palette](/docs/graph/graph-tone#the-palette). Its
 connectors take the tone, and so does anything you style with the tone utilities:
 
 ```tsx
@@ -124,7 +123,7 @@ connectors take the tone, and so does anything you style with the tone utilities
 </Node>
 ```
 
-A node with no `tone` takes the one around it: its graph's, or `neutral`.
+A node with no `tone` takes the one around it: its group's, its graph's, or `neutral`.
 
 ## Subflows
 
@@ -173,9 +172,8 @@ Connectors keep [their own variables](/docs/graph/graph-node-connector#styling).
 </Node>
 ```
 
-Every length but the radius is in steps of Tailwind's `--spacing`, so setting `--spacing`
-on a node rescales it and whatever is inside it. The radius comes from your theme's
-`--radius` unless you give it in steps, as above.
+Lengths are steps of Tailwind's `--spacing`, so setting `--spacing` on a node rescales
+it. The radius follows your theme's `--radius` unless you set it.
 
 Every part carries a `data-slot` (`node`, `node-card`, `node-header` and so on). `Node`
 also carries `data-size`, `data-variant`, `data-fluid` and `data-tone`. Other state is

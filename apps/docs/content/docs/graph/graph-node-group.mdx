@@ -10,7 +10,8 @@ storybook: "/storybook/?path=/story/graph-node-group--basic"
 
 <InstallTabs name="graph-node-group" />
 
-This installs [Graph](/docs/graph/graph) too, for the palette a group takes its tone from.
+This installs [Tones](/docs/graph/graph-tone) too, the palette a group takes its tone
+from. It doesn't need a [Graph](/docs/graph/graph): a group works anywhere nodes do.
 
 ## Usage
 
@@ -58,33 +59,40 @@ The tag is a row. Anything you put in it after the handle, such as a menu or an 
 button, lines up beside the name. The handle only looks grabbable; point your canvas's
 drag handle at it.
 
-### Around its nodes, or on a canvas
+### Around its nodes
 
 Put nodes inside `NodeGroupIsland` and the group hugs them. The island is a grid, so
 `grid-flow-col` and a gap lay them out in a row.
 
-A canvas places nodes itself, and draws a group's island under them and its tag over
-them. `NodeGroup` paints nothing, so each can have a root of its own: give one the
-island's position and size, and the other its corner.
+### On a canvas
+
+On a [Graph](/docs/graph/graph), a group is a node type. Fill the size React Flow gives
+it and leave the island bare; the group's children are drawn over it. Point the node's
+`dragHandle` at the handle, so the group is dragged by its tag and the canvas still pans
+from the island.
 
 ```tsx
-{
-  /* Under the nodes. */
+function Group({ data }: NodeProps<GroupNode>) {
+  return (
+    <NodeGroup tone={data.tone} className="size-full">
+      <NodeGroupTag>
+        <NodeGroupHandle>
+          <GripVerticalIcon aria-hidden />
+          <NodeGroupTitle>{data.title}</NodeGroupTitle>
+        </NodeGroupHandle>
+      </NodeGroupTag>
+      <NodeGroupIsland />
+    </NodeGroup>
+  );
 }
-<NodeGroup tone="blue" className="pointer-events-none absolute" style={rect}>
-  <NodeGroupIsland />
-</NodeGroup>;
 
-{
-  /* Over them. */
-}
-<NodeGroup tone="blue" className="absolute" style={corner}>
-  <NodeGroupTag>…</NodeGroupTag>
-</NodeGroup>;
+const nodes = [
+  { id: "book", type: "group", dragHandle: "[data-slot=node-group-handle]", … },
+  { id: "find", type: "step", parentId: "book", position: { x: 24, y: 48 }, … },
+];
 ```
 
-`pointer-events-none` on the island's root keeps the canvas and the nodes on it easy to
-reach.
+With `packGrid` on the graph, the group sizes itself around its children.
 
 ## Sizes
 
@@ -103,7 +111,7 @@ The island's top padding is twice the rest, to clear the tag.
 ## Tone
 
 `tone` colours the island and the tag's dot from the
-[graph palette](/docs/graph/graph#the-palette). Nodes inside the island take the group's
+[palette](/docs/graph/graph-tone#the-palette). Nodes inside the island take the group's
 tone unless they name their own.
 
 ## An empty group

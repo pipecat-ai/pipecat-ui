@@ -74,6 +74,8 @@ const KIT_DOC_ROUTES: Record<string, string> = {
   "audio-visualizer-radial": "/docs/visualizers/audio-visualizer-radial",
   "audio-visualizer-wave": "/docs/visualizers/audio-visualizer-wave",
   graph: "/docs/graph/graph",
+  "graph-tone": "/docs/graph/graph-tone",
+  "graph-node-wire": "/docs/graph/graph-node-wire",
   "graph-node": "/docs/graph/graph-node",
   "graph-node-connector": "/docs/graph/graph-node-connector",
   "graph-node-group": "/docs/graph/graph-node-group",

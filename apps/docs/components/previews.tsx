@@ -18,6 +18,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
+import { Panel } from "@xyflow/react";
 
 import {
   BotAudioControlView,
@@ -65,7 +66,11 @@ import {
   AudioVisualizerWaveView,
 } from "@/components/pipecat/audio-visualizer-wave";
 import { DuplexTimelineView } from "@/components/pipecat/duplex-timeline";
-import { Graph, graphToneStyle } from "@/components/pipecat/graph/graph";
+import {
+  Graph,
+  type GraphGroupPacking,
+  type GraphPattern,
+} from "@/components/pipecat/graph/graph";
 import {
   NodeAction,
   Node,
@@ -95,6 +100,11 @@ import {
   NodeGroupTag,
   NodeGroupTitle,
 } from "@/components/pipecat/graph/node-group";
+import {
+  NodeWireAction,
+  type NodeWireEdge,
+} from "@/components/pipecat/graph/node-wire";
+import { graphToneStyle } from "@/components/pipecat/graph/tone";
 import { Metric } from "@/components/pipecat/metric";
 import { Console } from "@/components/pipecat/console/console";
 import { MetricsView } from "@/components/pipecat/metrics/metrics";
@@ -108,6 +118,14 @@ import { Button } from "@/components/ui/button";
 import { registerTransport } from "@/lib/transports";
 
 import { useDuplexDemo } from "../../../packages/registry/src/fixtures/duplex-demo";
+import {
+  DEMO_EDGE_TYPES,
+  DEMO_NODE_TYPES,
+  DemoConnectionLine,
+  type DemoNode,
+  GraphDemoControls,
+  useGraphDemo,
+} from "../../../packages/registry/src/fixtures/graph-demo";
 import { PipecatSandbox } from "./pipecat-sandbox";
 import {
   BooleanControl,
@@ -2128,7 +2146,114 @@ type InheritedTone = (typeof INHERITED_TONES)[number];
 const toneProp = (tone: InheritedTone) =>
   tone === "inherit" ? undefined : tone;
 
+const GRAPH_PATTERNS = [
+  "dots",
+  "lines",
+  "cross",
+  "none",
+] as const satisfies GraphPattern[];
+// Each sets the two variables the canvas takes its colours from.
+const GRAPH_COLOURS = {
+  theme: undefined,
+  indigo:
+    "[--graph-canvas:var(--color-indigo-50)] [--graph-grid:var(--color-indigo-300)] dark:[--graph-canvas:var(--color-indigo-950)] dark:[--graph-grid:var(--color-indigo-700)]",
+  warm: "[--graph-canvas:var(--color-stone-100)] [--graph-grid:var(--color-stone-400)] dark:[--graph-canvas:var(--color-stone-900)] dark:[--graph-grid:var(--color-stone-600)]",
+} as const;
+const GRAPH_COLOUR_NAMES = ["theme", "indigo", "warm"] as const;
+const GRAPH_GROUP_PACKING = [
+  "off",
+  "horizontal",
+  "vertical",
+] as const satisfies GraphGroupPacking[];
+
 export function GraphPreview() {
+  const demo = useGraphDemo();
+  const [grid, setGrid] = useState(24);
+  const [pattern, setPattern] = useState<GraphPattern>("dots");
+  const [colours, setColours] =
+    useState<(typeof GRAPH_COLOUR_NAMES)[number]>("theme");
+  const [snap, setSnap] = useState(true);
+  const [pack, setPack] = useState(true);
+  const [gap, setGap] = useState(3);
+  const [groups, setGroups] = useState<GraphGroupPacking>("off");
+
+  return (
+    <PreviewShell
+      tall
+      controls={
+        <>
+          <ControlSection title="Grid">
+            <NumberControl
+              label="grid (px)"
+              value={grid}
+              onChange={setGrid}
+              min={12}
+              max={48}
+              step={4}
+            />
+            <SelectControl
+              label="pattern"
+              value={pattern}
+              onValueChange={setPattern}
+              options={GRAPH_PATTERNS}
+            />
+            <SelectControl
+              label="colours"
+              value={colours}
+              onValueChange={setColours}
+              options={GRAPH_COLOUR_NAMES}
+            />
+          </ControlSection>
+          <ControlSection title="Behaviour">
+            <BooleanControl
+              label="snap"
+              checked={snap}
+              onCheckedChange={setSnap}
+            />
+            <BooleanControl
+              label="packGrid"
+              checked={pack}
+              onCheckedChange={setPack}
+            />
+            <NumberControl
+              label="groupGap (cells)"
+              value={gap}
+              onChange={setGap}
+              min={0}
+              max={6}
+            />
+            <SelectControl
+              label="packGroups"
+              value={groups}
+              onValueChange={setGroups}
+              options={GRAPH_GROUP_PACKING}
+            />
+          </ControlSection>
+        </>
+      }
+    >
+      <div className="h-96 w-full overflow-hidden rounded-lg border">
+        <Graph
+          {...demo}
+          grid={grid}
+          pattern={pattern}
+          snap={snap}
+          packGrid={pack}
+          groupGap={gap}
+          packGroups={groups}
+          className={GRAPH_COLOURS[colours]}
+          nodeTypes={DEMO_NODE_TYPES}
+          edgeTypes={DEMO_EDGE_TYPES}
+          connectionLineComponent={DemoConnectionLine}
+        >
+          <GraphDemoControls grid={grid} gap={gap} groups={groups} />
+        </Graph>
+      </div>
+    </PreviewShell>
+  );
+}
+
+export function GraphTonePreview() {
   const [tone, setTone] = useState<(typeof GRAPH_TONES)[number]>("blue");
   const [nodeTone, setNodeTone] = useState<InheritedTone>("inherit");
 
@@ -2138,7 +2263,7 @@ export function GraphPreview() {
       controls={
         <ControlSection title="Tone">
           <SelectControl
-            label="graph tone"
+            label="tone around it"
             value={tone}
             onValueChange={setTone}
             options={GRAPH_TONES}
@@ -2152,8 +2277,8 @@ export function GraphPreview() {
         </ControlSection>
       }
     >
-      <Graph
-        tone={tone}
+      <div
+        style={graphToneStyle(tone)}
         className="flex flex-wrap items-center justify-center gap-x-12 gap-y-8"
       >
         <Node size="sm" tone={toneProp(nodeTone)}>
@@ -2196,7 +2321,124 @@ export function GraphPreview() {
             </li>
           ))}
         </ul>
-      </Graph>
+      </div>
+    </PreviewShell>
+  );
+}
+
+const WIRE_NODES: DemoNode[] = [
+  {
+    id: "ask",
+    type: "step",
+    position: { x: 0, y: 72 },
+    data: {
+      title: "Find a slot",
+      kind: "Question",
+      tone: "green",
+      exits: ["Chosen"],
+    },
+  },
+  {
+    id: "book",
+    type: "step",
+    position: { x: 336, y: 0 },
+    data: { title: "Book the slot", kind: "Action", tone: "green", exits: [] },
+  },
+  {
+    id: "wait",
+    type: "step",
+    position: { x: 336, y: 168 },
+    data: {
+      title: "Join the waitlist",
+      kind: "Action",
+      tone: "amber",
+      exits: [],
+    },
+  },
+];
+
+export function GraphNodeWirePreview() {
+  const [tone, setTone] = useState<(typeof GRAPH_TONES)[number]>("green");
+  const [signal, setSignal] = useState(true);
+  const [dashed, setDashed] = useState(false);
+  const [active, setActive] = useState(false);
+  const [label, setLabel] = useState(true);
+  const [rerouted, setRerouted] = useState(false);
+  // A new id is a new wire, so it unfurls from its port again.
+  const [run, setRun] = useState(0);
+  const edges: NodeWireEdge[] = [
+    {
+      id: `ask:Chosen:${run}`,
+      type: "wire",
+      source: "ask",
+      sourceHandle: "Chosen",
+      target: rerouted ? "wait" : "book",
+      // The key changes with the target, so the wire springs across to it.
+      data: { tone, signal, dashed, active, bounce: String(rerouted) },
+      label: label ? (
+        <NodeWireAction aria-label="Add a step on this wire" />
+      ) : undefined,
+    },
+  ];
+
+  return (
+    <PreviewShell
+      tall
+      controls={
+        <ControlSection title="Wire">
+          <SelectControl
+            label="tone"
+            value={tone}
+            onValueChange={setTone}
+            options={GRAPH_TONES}
+          />
+          <BooleanControl
+            label="signal"
+            checked={signal}
+            onCheckedChange={setSignal}
+          />
+          <BooleanControl
+            label="dashed"
+            checked={dashed}
+            onCheckedChange={setDashed}
+          />
+          <BooleanControl
+            label="active"
+            checked={active}
+            onCheckedChange={setActive}
+          />
+          <BooleanControl
+            label="label"
+            checked={label}
+            onCheckedChange={setLabel}
+          />
+          <BooleanControl
+            label="re-route (bounce)"
+            checked={rerouted}
+            onCheckedChange={setRerouted}
+          />
+        </ControlSection>
+      }
+    >
+      <div className="h-72 w-full overflow-hidden rounded-lg border">
+        <Graph
+          defaultNodes={WIRE_NODES}
+          edges={edges}
+          nodeTypes={DEMO_NODE_TYPES}
+          edgeTypes={DEMO_EDGE_TYPES}
+          connectionLineComponent={DemoConnectionLine}
+        >
+          <Panel position="top-right">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setRun((count) => count + 1)}
+            >
+              Replay
+            </Button>
+          </Panel>
+        </Graph>
+      </div>
     </PreviewShell>
   );
 }

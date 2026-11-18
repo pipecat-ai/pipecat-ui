@@ -2,7 +2,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { CalendarClockIcon, EllipsisIcon } from "lucide-react";
 import { motion } from "motion/react";
 
-import { Graph } from "@/components/pipecat/graph/graph";
 import {
   NodeAction,
   Node,
@@ -134,11 +133,11 @@ export const Fluid: Story = {
 /** One markup in every palette tone: the ports and the kind word follow it. */
 export const Tones: Story = {
   render: (args) => (
-    <Graph className="flex flex-wrap items-start gap-8">
+    <div className="flex flex-wrap items-start gap-8">
       {TONES.map((tone) => (
         <ExampleNode key={tone} {...args} tone={tone} outputs={["Next"]} />
       ))}
-    </Graph>
+    </div>
   ),
 };
 
@@ -201,10 +200,10 @@ function ThemedNode({
     <Node
       {...props}
       tone="green"
-      className="[--node-radius:--spacing(6.5)] [--node-text-description:--spacing(2.5)]"
+      className="min-h-44 [--node-radius:--spacing(6.5)] [--node-text-description:--spacing(2.5)]"
     >
       <NodeCard
-        className={`min-h-44 ring-0 ${NODE_SHADOW}`}
+        className={`ring-0 ${NODE_SHADOW}`}
         // With `lift`, only the card moves: the ports stay on the node's box.
         render={
           lift ? (
@@ -241,7 +240,7 @@ function ThemedNode({
 
 export const Restyled: Story = {
   render: (args) => (
-    <Graph
+    <div
       style={THEME}
       className="bg-background flex flex-wrap items-center gap-10 rounded-xl p-12"
     >
@@ -249,15 +248,15 @@ export const Restyled: Story = {
       <div className="w-80">
         <ThemedNode {...args} fluid />
       </div>
-    </Graph>
+    </div>
   ),
 };
 
 /** The card is its own element, so it can move without moving the ports. */
 export const AnimatedCard: Story = {
   render: (args) => (
-    <Graph style={THEME} className="bg-background rounded-xl p-12">
+    <div style={THEME} className="bg-background rounded-xl p-12">
       <ThemedNode {...args} lift />
-    </Graph>
+    </div>
   ),
 };

@@ -1,7 +1,19 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
-import { Graph, graphToneStyle } from "@/components/pipecat/graph/graph";
+import {
+  Graph,
+  type GraphGroupPacking,
+  type GraphPattern,
+} from "@/components/pipecat/graph/graph";
+import {
+  DEMO_EDGE_TYPES,
+  DEMO_NODE_TYPES,
+  DemoConnectionLine,
+  GraphDemoControls,
+  useGraphDemo,
+} from "../../fixtures/graph-demo";
 
+const PATTERNS = ["dots", "lines", "cross", "none"] as const;
 const TONES = [
   "neutral",
   "blue",
@@ -13,81 +25,103 @@ const TONES = [
   "red",
 ] as const;
 
-const meta = {
-  title: "Graph/Graph",
-  component: Graph,
-  argTypes: {
-    tone: { control: "select", options: TONES },
-    render: { control: false },
-  },
-} satisfies Meta<typeof Graph>;
+type DemoArgs = {
+  grid: number;
+  pattern: GraphPattern;
+  snap: boolean;
+  packGrid: boolean;
+  groupGap: number;
+  packGroups: GraphGroupPacking;
+  tone?: string;
+  className?: string;
+};
 
-export default meta;
-type Story = StoryObj<typeof meta>;
-
-/** The tone in scope, drawn with the four utilities a part styles itself with. */
-function Swatches({ name }: { name: string }) {
+function Demo({ className, ...args }: DemoArgs) {
+  const demo = useGraphDemo();
   return (
-    <div className="flex items-center gap-2">
-      <span className="bg-tone size-8 rounded-md" title="bg-tone" />
-      <span className="bg-tone-mid size-8 rounded-md" title="bg-tone-mid" />
-      <span className="bg-tone-soft size-8 rounded-md" title="bg-tone-soft" />
-      <span className="text-tone-ink ml-2 text-sm font-medium">{name}</span>
+    <div className="h-112 w-240 max-w-[90vw] overflow-hidden rounded-xl border">
+      <Graph
+        {...demo}
+        {...args}
+        className={className}
+        nodeTypes={DEMO_NODE_TYPES}
+        edgeTypes={DEMO_EDGE_TYPES}
+        connectionLineComponent={DemoConnectionLine}
+      >
+        <GraphDemoControls
+          grid={args.grid}
+          gap={args.groupGap}
+          groups={args.packGroups}
+        />
+      </Graph>
     </div>
   );
 }
 
-/** Everything inside takes the graph's tone until something names its own. */
+const meta = {
+  title: "Graph/Graph",
+  component: Demo,
+  args: {
+    grid: 24,
+    pattern: "dots",
+    snap: true,
+    packGrid: true,
+    groupGap: 3,
+    packGroups: "off",
+  },
+  argTypes: {
+    grid: { control: { type: "range", min: 12, max: 48, step: 4 } },
+    groupGap: { control: { type: "range", min: 0, max: 6, step: 1 } },
+    packGroups: {
+      control: "inline-radio",
+      options: ["off", "horizontal", "vertical"],
+    },
+    pattern: { control: "inline-radio", options: PATTERNS },
+    tone: { control: "select", options: TONES },
+  },
+} satisfies Meta<typeof Demo>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+/** Drag a step, a group by its tag, or a wire out of a port. */
 export const Basic: Story = {
-  args: { tone: "blue" },
-  render: (args) => (
-    <Graph {...args} className="flex flex-col gap-3">
-      <Swatches name="the graph's tone" />
-      <div style={graphToneStyle("coral")}>
-        <Swatches name="a tone of its own" />
-      </div>
-    </Graph>
-  ),
+  render: (args) => <Demo {...args} />,
 };
 
-/** Each tone is one colour; its mid, soft and ink shades are mixed from it. */
-export const Palette: Story = {
+/** The same grid drawn four ways. */
+export const Patterns: Story = {
   render: (args) => (
-    <Graph {...args} className="flex flex-col gap-3">
-      {TONES.map((tone) => (
-        <div key={tone} style={graphToneStyle(tone)}>
-          <Swatches name={tone} />
+    <div className="grid grid-cols-2 gap-4">
+      {PATTERNS.map((pattern) => (
+        <div
+          key={pattern}
+          className="h-56 w-112 max-w-[44vw] rounded-xl border"
+        >
+          <Graph {...args} pattern={pattern} nodes={[]} edges={[]} />
         </div>
       ))}
-    </Graph>
+    </div>
   ),
 };
 
-/*
- * A palette of your own is a set of variables named after the tone. These sit
- * on a wrapper for the story; yours go in :root.
- */
-const OWN_PALETTE = {
-  "--graph-slate": "var(--color-slate-500)",
-  "--graph-brand": "var(--color-teal-600)",
-  "--graph-brand-mid": "var(--color-teal-300)",
-  "--graph-brand-soft": "var(--color-teal-100)",
-  "--graph-brand-ink": "var(--color-teal-800)",
-} as React.CSSProperties;
+/** Each group lines its nodes up in a column, wherever they are dropped. */
+export const PackedVertically: Story = {
+  args: { packGroups: "vertical" },
+  render: (args) => <Demo {...args} />,
+};
 
-/** Name a tone, define `--graph-<name>`, and pin any shade you want exact. */
-export const OwnPalette: Story = {
-  render: (args) => (
-    <div style={OWN_PALETTE} className="flex flex-col gap-3">
-      <Graph {...args} tone="slate">
-        <Swatches name="slate: one variable, shades mixed" />
-      </Graph>
-      <Graph {...args} tone="brand">
-        <Swatches name="brand: every shade pinned" />
-      </Graph>
-      <Graph {...args} tone="green" className="[--graph-green:#1f9d63]">
-        <Swatches name="green, redefined for this graph" />
-      </Graph>
-    </div>
-  ),
+/** The canvas and its grid take their colours from two variables. */
+export const Colours: Story = {
+  args: {
+    className:
+      "[--graph-canvas:var(--color-indigo-50)] [--graph-grid:var(--color-indigo-300)] dark:[--graph-canvas:var(--color-indigo-950)] dark:[--graph-grid:var(--color-indigo-700)]",
+  },
+  render: (args) => <Demo {...args} />,
+};
+
+/** With packing off, groups keep whatever size and place they are given. */
+export const Unpacked: Story = {
+  args: { packGrid: false, snap: false },
+  render: (args) => <Demo {...args} />,
 };

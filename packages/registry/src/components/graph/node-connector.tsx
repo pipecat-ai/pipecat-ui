@@ -7,7 +7,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import {
   type GraphTone,
   graphToneStyle,
-} from "@/components/pipecat/graph/graph";
+} from "@/components/pipecat/graph/tone";
 import { cn } from "@/lib/utils";
 
 /*
@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 const nodeConnectorsVariants = cva(
   [
     // Raised, so ports stay over the card when the area sits beside it.
-    "group/node-connectors relative z-1 flex max-w-(--node-connector-max-width) min-w-0 flex-col justify-center py-(--node-py) group-has-data-[slot=node-footer]/node:pb-0 group-has-data-[slot=node-header]/node:pt-0",
+    "group/node-connectors relative z-1 flex max-w-(--node-connector-max-width) min-w-0 flex-col justify-center pt-(--node-body-pt) pb-(--node-body-pb)",
     "[--node-connector-height:calc(var(--node-text)*2_-_var(--spacing))] [--node-connector-port:calc(var(--node-text)_-_var(--spacing)/2)] [--node-connector-text:var(--node-text-description)]",
     // Labels truncate at two fifths of the size's own width, however wide a fluid node is.
     "[--node-connector-max-width:calc(var(--node-width)*0.4)]",
@@ -99,8 +99,10 @@ export function NodeConnector({
 const nodeConnectorPortVariants = cva(
   [
     "border-tone bg-card order-first -mx-[calc(var(--node-connector-port)/2)] size-(--node-connector-port) shrink-0 border-2",
+    // Rendered as a canvas's handle, it stays where the row puts it.
+    "static transform-none",
     // A halo in the port's tone on hover, so it reads as something to grab.
-    "outline-4 outline-transparent transition-[outline-color] hover:outline-tone/30",
+    "outline-4 outline-transparent transition-[outline-color] hover:outline-tone/30 forced-colors:outline-none",
     "group-data-[side=right]/node-connectors:order-last",
     "group-data-active/node-connector:bg-tone group-data-active/node-connector:border-solid",
   ],
@@ -120,15 +122,18 @@ const nodeConnectorPortVariants = cva(
   },
 );
 
-export interface NodeConnectorPortProps
-  extends
-    useRender.ComponentProps<"span">,
-    VariantProps<typeof nodeConnectorPortVariants> {}
+type PortVariants = VariantProps<typeof nodeConnectorPortVariants>;
+
+export interface NodeConnectorPortProps extends useRender.ComponentProps<"span"> {
+  /** A diamond marks a link into or out of another graph. */
+  shape?: NonNullable<PortVariants["shape"]>;
+  /** The ring alone, a dashed ring, or filled with the tone. */
+  variant?: NonNullable<PortVariants["variant"]>;
+}
 
 /**
  * Where a wire ends. It sits on the outer edge of its area, centred on the
- * edge of the card, wherever it comes in the markup. It is placed with margins
- * and takes no width, so its transform is free to animate.
+ * card's edge, wherever it comes in the markup, and takes no width.
  */
 export function NodeConnectorPort({
   shape = "circle",

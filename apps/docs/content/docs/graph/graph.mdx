@@ -1,7 +1,7 @@
 ---
 title: Graph
-description: The container a graph's nodes share, and the palette they take their tones from. A stub for now — the canvas and wires come later.
-storybook: "/storybook/?path=/story/graph-graph--palette"
+description: A canvas for nodes and wires — React Flow with the theme's colours, a grid, snapping, and groups that box and pack themselves.
+storybook: "/storybook/?path=/story/graph-graph--basic"
 ---
 
 <GraphPreview />
@@ -10,117 +10,158 @@ storybook: "/storybook/?path=/story/graph-graph--palette"
 
 <InstallTabs name="graph" />
 
-Installing it adds the palette to your theme: a `--graph-*` variable for each tone, and
-the `tone` colours for Tailwind.
+This adds [React Flow](https://reactflow.dev) (`@xyflow/react`) and imports its base
+stylesheet into Tailwind's `base` layer, so utilities can restyle its nodes, edges and
+handles. It installs [Tones](/docs/graph/graph-tone) too, the palette everything on the
+canvas takes its colours from.
 
 ## Usage
 
 ```tsx
 import { Graph } from "@/components/pipecat/graph/graph";
-import { Node } from "@/components/pipecat/graph/node";
+import {
+  NodeWire,
+  NodeWireConnection,
+} from "@/components/pipecat/graph/node-wire";
 
-<Graph>
-  <Node tone="green">…</Node>
-  <Node tone="purple" variant="subflow">
-    …
-  </Node>
-</Graph>;
+const nodeTypes = { step: Step, group: Group };
+const edgeTypes = { wire: NodeWire };
+
+<div className="h-96">
+  <Graph
+    nodes={nodes}
+    edges={edges}
+    onNodesChange={onNodesChange}
+    onEdgesChange={onEdgesChange}
+    onConnect={onConnect}
+    nodeTypes={nodeTypes}
+    edgeTypes={edgeTypes}
+    connectionLineComponent={NodeWireConnection}
+    snap
+    packGrid
+  />
+</div>;
 ```
 
-`Graph` is the element a graph's nodes sit in. Today it does two things: it can set the
-tone everything inside starts from, and it is where one graph changes the palette. The
-canvas and wires will build on it.
+`Graph` is React Flow's `<ReactFlow>` with a few props of its own. Every React Flow prop
+passes through, and anything inside it can use React Flow's hooks. It fills its parent,
+which needs a height.
 
-## Tones
+What goes on the canvas is yours: a node type renders a [Node](/docs/graph/graph-node)
+with [handles](/docs/graph/graph-node-connector#on-a-canvas) for ports, a group type
+renders a [Node Group](/docs/graph/graph-node-group#on-a-canvas), and
+[Node Wire](/docs/graph/graph-node-wire) is the edge type.
 
-A tone is a named colour. Give `tone` to `Graph`, a
-[`NodeGroup`](/docs/graph/graph-node-group), a [`Node`](/docs/graph/graph-node) or a
-[`NodeConnector`](/docs/graph/graph-node-connector), and that element and everything
-inside it is in that tone until something inside names another:
+## The grid
+
+`grid` is the pitch of the grid in pixels, 24 by default. It spaces the pattern, and it
+is what nodes land on when `snap` is set.
+
+`pattern` draws it as `dots`, `lines` or `cross`, or `none` to leave the canvas bare. For
+anything else, pass `pattern="none"` and put React Flow's own `<Background>` inside.
+
+The canvas and its grid take their colours from two variables. Set them in your theme,
+or on one graph:
+
+| Variable         | Sets                  | Default                                     |
+| ---------------- | --------------------- | ------------------------------------------- |
+| `--graph-canvas` | The canvas behind it. | `--background`                              |
+| `--graph-grid`   | The pattern's colour. | A mix of `--foreground` and `--background`. |
 
 ```tsx
-<Node tone="green">
-  {/* Green, from the node. */}
-  <NodeConnector>…</NodeConnector>
-  {/* Coral, its own. */}
-  <NodeConnector tone="coral">…</NodeConnector>
-</Node>
+<Graph className="[--graph-canvas:var(--color-stone-100)] [--graph-grid:var(--color-stone-400)]" />
 ```
 
-Parts never name a colour. They use four utilities that read the tone in scope, and so
-can your own content:
+## Groups
 
-| Utility         | Is                                              | Used for                        |
-| --------------- | ----------------------------------------------- | ------------------------------- |
-| `bg-tone`       | The tone itself.                                | A port's ring, a filled port.   |
-| `bg-tone-mid`   | The tone, part-way to the card colour.          | The stack behind a subflow.     |
-| `bg-tone-soft`  | A tint of the tone on the card colour.          | A group's island, icon tiles.   |
-| `text-tone-ink` | The tone, darkened or lightened until it reads. | Kind words, icons, tinted text. |
+A group is a React Flow node with children: nodes whose `parentId` is its id, placed
+relative to it. Dragging the group carries them. Two props keep groups in shape, each
+when a drag ends and once when the graph first appears.
 
-Any of them works as a text, border, ring or fill colour: `border-tone`, `text-tone-ink`,
-`ring-tone/40`.
+**`packGrid`** fits groups to the grid:
 
-## The palette
+- **Boxing.** Each group is sized around its children: a cell clear on each side and two
+  on top, for its tag. It grows when a child is dragged out and shrinks back when one is
+  dragged in.
+- **Spacing.** No two groups sit closer than `groupGap` cells: three by default, and `0`
+  lets them touch. The group you dropped stays where you put it, the ones in its way
+  glide aside, and a node outside any group is moved out of the way too.
 
-Each tone is a variable named after it, set to one of Tailwind's colours: the 600 in
-light, the 400 in dark, so a port's ring stands out from the card in both.
+**`packGroups`** lays out the nodes inside each group, and boxes the group around them:
 
-| Tone      | Variable          | Colour               |
-| --------- | ----------------- | -------------------- |
-| `neutral` | `--graph-neutral` | `--muted-foreground` |
-| `blue`    | `--graph-blue`    | `blue`               |
-| `purple`  | `--graph-purple`  | `violet`             |
-| `amber`   | `--graph-amber`   | `amber`              |
-| `green`   | `--graph-green`   | `emerald`            |
-| `pink`    | `--graph-pink`    | `pink`               |
-| `coral`   | `--graph-coral`   | `orange`             |
-| `red`     | `--graph-red`     | `red`                |
+- `horizontal` lines them up in a row, level at the top, three cells apart.
+- `vertical` stacks them in a column, level at the left, two cells apart.
+- `off`, the default, leaves them wherever they are put.
 
-With no tone set anywhere, everything is `neutral`.
+Nodes keep the order they sit in, so dropping one past its neighbour swaps them.
 
-### A tone of your own
-
-A tone is only a name. Define `--graph-<name>` where your theme lives and use the name:
-
-```css
-:root {
-  --graph-brand: var(--color-teal-600);
-}
-.dark {
-  --graph-brand: var(--color-teal-400);
-}
-```
+`arrangeGroups` does the same on demand, for a tidy button or after you change the graph
+yourself. `lineUpGroups`, `boxGroups` and `separateGroups` in `group-layout` are the
+steps as plain functions over nodes.
 
 ```tsx
-<Graph tone="brand">…</Graph>
+import { arrangeGroups } from "@/components/pipecat/graph/graph";
+
+const flow = useReactFlow();
+<Button onClick={() => arrangeGroups(flow, { grid: 24, groups: "horizontal" })}>
+  Tidy
+</Button>;
 ```
 
-That one variable is enough: the mid, soft and ink shades are mixed from it and your
-theme's `--card` and `--foreground`, so they follow light and dark. To choose a shade
-yourself, define it beside the colour, for as many of the three as you want:
+| Option     | Type                                  | Description                                           |
+| ---------- | ------------------------------------- | ----------------------------------------------------- |
+| `grid`     | `number`                              | The grid's pitch in px.                               |
+| `groups`   | `"horizontal" \| "vertical" \| "off"` | Line each group's nodes up. Default `off`.            |
+| `separate` | `boolean`                             | Keep groups apart. Default `true`.                    |
+| `gap`      | `number`                              | The least room between groups, in cells. Default `3`. |
+| `anchors`  | `string[]`                            | The groups that stay put while others move.           |
 
-```css
-:root {
-  --graph-brand: var(--color-teal-600);
-  --graph-brand-mid: var(--color-teal-300);
-  --graph-brand-soft: var(--color-teal-100);
-  --graph-brand-ink: var(--color-teal-800);
-}
-```
+Nothing here lays out a whole graph: a row or a column inside a group is as far as it
+goes.
 
-The tones that ship work the same way, so the same variables retune them:
-`--graph-green`, `--graph-green-soft` and so on. Set one on a `Graph` to change it for
-that graph alone:
+## Framing
+
+A graph opens framed: all of it in view, never zoomed in past actual size. `GRAPH_FIT`
+holds those options, for a button that frames it again:
 
 ```tsx
-<Graph className="[--graph-green:var(--color-lime-600)]">…</Graph>
+import { GRAPH_FIT } from "@/components/pipecat/graph/graph";
+
+const flow = useReactFlow();
+<Button onClick={() => flow.fitView({ ...GRAPH_FIT, duration: 450 })}>
+  Frame
+</Button>;
 ```
 
-A name with no `--graph-<name>` variable falls back to `neutral`.
+Both buttons use `useReactFlow`, so they go inside `Graph`, in a React Flow `<Panel>`, or
+anywhere under a `<ReactFlowProvider>` that wraps it.
+
+## Defaults
+
+These differ from React Flow's, and any of them can be passed to change it back:
+
+| Prop               | Value                           |
+| ------------------ | ------------------------------- |
+| `fitView`          | `true`                          |
+| `fitViewOptions`   | `{ padding: 0.08, maxZoom: 1 }` |
+| `minZoom`          | `0.3`                           |
+| `maxZoom`          | `1.6`                           |
+| `connectionRadius` | `38`                            |
+
+React Flow's attribution is left showing. Its makers ask that you
+[only hide it](https://reactflow.dev/learn/troubleshooting/remove-attribution) with a
+React Flow Pro subscription; if you have one, pass
+`proOptions={{ hideAttribution: true }}`.
 
 ## Key props
 
-| Prop     | Type                        | Description                                                     |
-| -------- | --------------------------- | --------------------------------------------------------------- |
-| `tone`   | a palette tone, or your own | The tone everything inside takes until something names its own. |
-| `render` | `ReactElement \| function`  | Render the container as another element.                        |
+| Prop         | Type                                                  | Description                                                             |
+| ------------ | ----------------------------------------------------- | ----------------------------------------------------------------------- |
+| `grid`       | `number`                                              | The grid's pitch in px. Default `24`.                                   |
+| `pattern`    | `"dots" \| "lines" \| "cross" \| "none"`              | How the grid is drawn. Default `dots`.                                  |
+| `snap`       | `boolean`                                             | Land nodes on the grid as they are dragged.                             |
+| `packGrid`   | `boolean`                                             | Box each group around its nodes and keep groups apart.                  |
+| `groupGap`   | `number`                                              | The least room `packGrid` leaves between groups, in cells. Default `3`. |
+| `packGroups` | `"horizontal" \| "vertical" \| "off"`                 | Line each group's nodes up in a row or a column. Default `off`.         |
+| `tone`       | a palette [tone](/docs/graph/graph-tone), or your own | The tone everything inside takes until something names its own.         |
+| …            | `ReactFlowProps`                                      | Everything else goes to React Flow.                                     |

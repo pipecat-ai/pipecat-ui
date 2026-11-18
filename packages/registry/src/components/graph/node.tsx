@@ -8,7 +8,7 @@ import { Maximize2Icon } from "lucide-react";
 import {
   type GraphTone,
   graphToneStyle,
-} from "@/components/pipecat/graph/graph";
+} from "@/components/pipecat/graph/tone";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +22,8 @@ const nodeVariants = cva(
     "group/node @container/node relative isolate grid",
     "grid-cols-[auto_minmax(0,1fr)_auto] grid-rows-[auto_minmax(0,1fr)_auto]",
     "[grid-template-areas:'header_header_header'_'left_content_right'_'footer_footer_footer']",
+    // The body gives up its padding on a side that meets a header or a footer.
+    "[--node-body-pb:var(--node-py)] [--node-body-pt:var(--node-py)] has-data-[slot=node-footer]:[--node-body-pb:0px] has-data-[slot=node-header]:[--node-body-pt:0px]",
   ],
   {
     variants: {
@@ -208,7 +210,13 @@ export function NodeAction({ className, render, ...props }: NodeActionProps) {
   });
 }
 
-export type NodeExpandProps = React.ComponentProps<typeof Button>;
+/** An icon-only button needs a name: one of these has to be given. */
+type Named =
+  | { "aria-label": string }
+  | { "aria-labelledby": string }
+  | { children: React.ReactNode };
+
+export type NodeExpandProps = React.ComponentProps<typeof Button> & Named;
 
 /**
  * The button that opens a subflow node, tinted with the node's tone. It goes
@@ -240,7 +248,7 @@ export function NodeContent({ className, render, ...props }: NodeContentProps) {
     props: mergeProps<"div">(
       {
         className: cn(
-          "flex min-w-0 flex-col gap-(--node-gap) px-(--node-px) py-(--node-py) [grid-area:content] group-has-data-[slot=node-footer]/node:pb-0 group-has-data-[slot=node-header]/node:pt-0",
+          "flex min-w-0 flex-col gap-(--node-gap) px-(--node-px) pt-(--node-body-pt) pb-(--node-body-pb) [grid-area:content]",
           className,
         ),
       },
