@@ -1,0 +1,169 @@
+---
+title: Graph
+description: A canvas for nodes and wires — React Flow with the theme's colours, a grid, snapping, and groups that box and pack themselves.
+storybook: "/storybook/?path=/story/graph-graph--basic"
+---
+
+<GraphPreview />
+
+## Installation
+
+<InstallTabs name="graph" />
+
+This adds [React Flow](https://reactflow.dev) (`@xyflow/react`) and imports its base
+stylesheet into Tailwind's `base` layer, so utilities can restyle its nodes, edges and
+handles. It installs [Tones](/docs/graph/graph-tone) too, the palette everything on the
+canvas takes its colours from.
+
+## Usage
+
+```tsx
+import { Graph } from "@/components/pipecat/graph/graph";
+import {
+  NodeWire,
+  NodeWireConnection,
+} from "@/components/pipecat/graph/node-wire";
+
+const nodeTypes = { step: Step, group: Group };
+const edgeTypes = { wire: NodeWire };
+
+<div className="h-96">
+  <Graph
+    nodes={nodes}
+    edges={edges}
+    onNodesChange={onNodesChange}
+    onEdgesChange={onEdgesChange}
+    onConnect={onConnect}
+    nodeTypes={nodeTypes}
+    edgeTypes={edgeTypes}
+    connectionLineComponent={NodeWireConnection}
+    snap
+    packGrid
+  />
+</div>;
+```
+
+`Graph` is React Flow's `<ReactFlow>` with a few props of its own. Every React Flow prop
+passes through, and anything inside it can use React Flow's hooks. It fills its parent,
+which needs a height.
+
+What goes on the canvas is yours: a node type renders a [Node](/docs/graph/graph-node)
+with [handles](/docs/graph/graph-node-connector#on-a-canvas) for ports, a group type
+renders a [Node Group](/docs/graph/graph-node-group#on-a-canvas), and
+[Node Wire](/docs/graph/graph-node-wire) is the edge type.
+
+## The grid
+
+`grid` is the pitch of the grid in pixels, 24 by default. It spaces the pattern, and it
+is what nodes land on when `snap` is set.
+
+`pattern` draws it as `dots`, `lines` or `cross`, or `none` to leave the canvas bare. For
+anything else, pass `pattern="none"` and put React Flow's own `<Background>` inside.
+
+The canvas and its grid take their colours from two variables. Set them in your theme,
+or on one graph:
+
+| Variable         | Sets                  | Default                                     |
+| ---------------- | --------------------- | ------------------------------------------- |
+| `--graph-canvas` | The canvas behind it. | `--background`                              |
+| `--graph-grid`   | The pattern's colour. | A mix of `--foreground` and `--background`. |
+
+```tsx
+<Graph className="[--graph-canvas:var(--color-stone-100)] [--graph-grid:var(--color-stone-400)]" />
+```
+
+## Groups
+
+A group is a React Flow node with children: nodes whose `parentId` is its id, placed
+relative to it. Dragging the group carries them. Two props keep groups in shape: once
+when the graph first appears, then whenever a drag ends or a node inside a group changes
+size.
+
+**`packGrid`** fits groups to the grid:
+
+- **Boxing.** Each group is sized around its children: a cell clear on each side and two
+  on top, for its tag. It grows when a child is dragged out and shrinks back when one is
+  dragged in.
+- **Spacing.** No two groups sit closer than `groupGap` cells: three by default, and `0`
+  lets them touch. The group you dropped stays where you put it, the ones in its way
+  glide aside, and a node outside any group is moved out of the way too. A group that
+  grew with one of its nodes holds its place the same way.
+
+**`packGroups`** lays out the nodes inside each group, and boxes the group around them:
+
+- `horizontal` lines them up in a row, level at the top, three cells apart.
+- `vertical` stacks them in a column, level at the left, two cells apart.
+- `off`, the default, leaves them wherever they are put.
+
+Nodes keep the order they sit in, so dropping one past its neighbour swaps them.
+
+`arrangeGroups` does the same on demand, for a tidy button or after you change the graph
+yourself. `lineUpGroups`, `boxGroups` and `separateGroups` in `group-layout` are the
+steps as plain functions over nodes.
+
+```tsx
+import { arrangeGroups } from "@/components/pipecat/graph/graph";
+
+const flow = useReactFlow();
+<Button onClick={() => arrangeGroups(flow, { grid: 24, groups: "horizontal" })}>
+  Tidy
+</Button>;
+```
+
+| Option     | Type                                  | Description                                           |
+| ---------- | ------------------------------------- | ----------------------------------------------------- |
+| `grid`     | `number`                              | The grid's pitch in px.                               |
+| `groups`   | `"horizontal" \| "vertical" \| "off"` | Line each group's nodes up. Default `off`.            |
+| `separate` | `boolean`                             | Keep groups apart. Default `true`.                    |
+| `gap`      | `number`                              | The least room between groups, in cells. Default `3`. |
+| `anchors`  | `string[]`                            | The groups that stay put while others move.           |
+
+Nothing here lays out a whole graph: a row or a column inside a group is as far as it
+goes.
+
+## Framing
+
+A graph opens framed: all of it in view, never zoomed in past actual size. `GRAPH_FIT`
+holds those options, for a button that frames it again:
+
+```tsx
+import { GRAPH_FIT } from "@/components/pipecat/graph/graph";
+
+const flow = useReactFlow();
+<Button onClick={() => flow.fitView({ ...GRAPH_FIT, duration: 450 })}>
+  Frame
+</Button>;
+```
+
+Both buttons use `useReactFlow`, so they go inside `Graph`, in a React Flow `<Panel>`, or
+anywhere under a `<ReactFlowProvider>` that wraps it.
+
+## Defaults
+
+These differ from React Flow's, and any of them can be passed to change it back:
+
+| Prop               | Value                           |
+| ------------------ | ------------------------------- |
+| `fitView`          | `true`                          |
+| `fitViewOptions`   | `{ padding: 0.08, maxZoom: 1 }` |
+| `minZoom`          | `0.3`                           |
+| `maxZoom`          | `1.6`                           |
+| `connectionRadius` | `38`                            |
+
+React Flow's attribution is left showing. Its makers ask that you
+[only hide it](https://reactflow.dev/learn/troubleshooting/remove-attribution) with a
+React Flow Pro subscription; if you have one, pass
+`proOptions={{ hideAttribution: true }}`.
+
+## Key props
+
+| Prop         | Type                                                  | Description                                                             |
+| ------------ | ----------------------------------------------------- | ----------------------------------------------------------------------- |
+| `grid`       | `number`                                              | The grid's pitch in px. Default `24`.                                   |
+| `pattern`    | `"dots" \| "lines" \| "cross" \| "none"`              | How the grid is drawn. Default `dots`.                                  |
+| `snap`       | `boolean`                                             | Land nodes on the grid as they are dragged.                             |
+| `packGrid`   | `boolean`                                             | Box each group around its nodes and keep groups apart.                  |
+| `groupGap`   | `number`                                              | The least room `packGrid` leaves between groups, in cells. Default `3`. |
+| `packGroups` | `"horizontal" \| "vertical" \| "off"`                 | Line each group's nodes up in a row or a column. Default `off`.         |
+| `tone`       | a palette [tone](/docs/graph/graph-tone), or your own | The tone everything inside takes until something names its own.         |
+| …            | `ReactFlowProps`                                      | Everything else goes to React Flow.                                     |

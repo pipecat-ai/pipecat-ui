@@ -1,4 +1,6 @@
 @import "tailwindcss";
+/* pipecat-ui: React Flow, in the base layer so utilities can restyle it */
+@import "@xyflow/react/dist/base.css" layer(base);
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "fumadocs-ui/css/neutral.css";
@@ -21,6 +23,43 @@ html > body[data-scroll-locked] {
 @source "../../../packages/registry/src";
 
 @custom-variant dark (&:is(.dark *));
+
+/* pipecat-ui: a graph node pulsing while it is active, and shaking on an error */
+@keyframes node-glow {
+  0% {
+    outline: 0 solid color-mix(in oklab, var(--node-status) 50%, transparent);
+    outline-offset: 3px;
+  }
+  70% {
+    outline: 14px solid transparent;
+    outline-offset: 3px;
+  }
+  100% {
+    outline: 0 solid transparent;
+    outline-offset: 3px;
+  }
+}
+@keyframes node-shake {
+  20% {
+    translate: -6px;
+  }
+  40% {
+    translate: 6px;
+  }
+  60% {
+    translate: -4px;
+  }
+  80% {
+    translate: 4px;
+  }
+}
+
+/* pipecat-ui: the signal dot drifting along a graph wire */
+@keyframes wire-pulse {
+  to {
+    stroke-dashoffset: -56;
+  }
+}
 
 /* pipecat-ui: push-to-talk live outline pulse */
 @keyframes ptt-pulse {
@@ -83,6 +122,34 @@ html > body[data-scroll-locked] {
   --color-agent-foreground: var(--agent-foreground);
   --color-client: var(--client-background);
   --color-client-foreground: var(--client-foreground);
+  --color-graph-tone: var(--graph-tone, var(--graph-neutral));
+  --color-graph-tone-soft: var(
+    --graph-tone-soft,
+    color-mix(
+      in oklab,
+      var(--graph-tone, var(--graph-neutral)) 14%,
+      var(--card)
+    )
+  );
+  --color-graph-tone-mid: var(
+    --graph-tone-mid,
+    color-mix(
+      in oklab,
+      var(--graph-tone, var(--graph-neutral)) 45%,
+      var(--card)
+    )
+  );
+  --color-graph-tone-ink: var(
+    --graph-tone-ink,
+    color-mix(
+      in oklab,
+      var(--graph-tone, var(--graph-neutral)) 55%,
+      var(--foreground)
+    )
+  );
+  --animate-wire-pulse: wire-pulse 1.8s linear infinite;
+  --animate-node-glow: node-glow 1.8s ease-out infinite;
+  --animate-node-shake: node-shake 0.45s ease-in-out;
 }
 
 :root {
@@ -126,6 +193,14 @@ html > body[data-scroll-locked] {
   --agent-foreground: oklch(0.585 0.233 277.117);
   --client-background: oklch(0.97 0.014 254.604);
   --client-foreground: oklch(0.623 0.214 259.815);
+  --graph-neutral: var(--muted-foreground);
+  --graph-blue: var(--color-blue-600);
+  --graph-purple: var(--color-violet-600);
+  --graph-amber: var(--color-amber-600);
+  --graph-green: var(--color-emerald-600);
+  --graph-pink: var(--color-pink-600);
+  --graph-coral: var(--color-orange-600);
+  --graph-red: var(--color-red-600);
 }
 
 .dark {
@@ -168,4 +243,12 @@ html > body[data-scroll-locked] {
   --agent-foreground: oklch(0.585 0.233 277.117);
   --client-background: oklch(0.19 0.045 259.815);
   --client-foreground: oklch(0.623 0.214 259.815);
+  --graph-neutral: var(--muted-foreground);
+  --graph-blue: var(--color-blue-400);
+  --graph-purple: var(--color-violet-400);
+  --graph-amber: var(--color-amber-400);
+  --graph-green: var(--color-emerald-400);
+  --graph-pink: var(--color-pink-400);
+  --graph-coral: var(--color-orange-400);
+  --graph-red: var(--color-red-400);
 }

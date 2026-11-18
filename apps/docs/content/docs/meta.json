@@ -8,6 +8,7 @@
     "components",
     "blocks",
     "hooks",
-    "visualizers"
+    "visualizers",
+    "graph"
   ]
 }

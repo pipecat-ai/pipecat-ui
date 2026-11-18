@@ -1,0 +1,149 @@
+---
+title: Node Connector
+description: Ports on a node's left and right edges, with or without labels — circles or diamonds, outlined, dashed or solid, in the node's tone or their own.
+storybook: "/storybook/?path=/story/graph-node-connector--basic"
+---
+
+<GraphNodeConnectorPreview />
+
+## Installation
+
+<InstallTabs name="graph-node-connector" />
+
+This installs [Node](/docs/graph/graph-node) and [Tones](/docs/graph/graph-tone) too.
+
+## Usage
+
+```tsx
+import {
+  GraphNode,
+  NodeCard,
+  NodeContent,
+} from "@/components/pipecat/graph/node";
+import {
+  NodeConnector,
+  NodeConnectorLabel,
+  NodeConnectorPort,
+  NodeConnectorsLeft,
+  NodeConnectorsRight,
+} from "@/components/pipecat/graph/node-connector";
+
+<GraphNode>
+  <NodeCard>
+    <NodeConnectorsLeft>
+      <NodeConnector>
+        <NodeConnectorPort />
+      </NodeConnector>
+    </NodeConnectorsLeft>
+    <NodeContent>Holds the slot the caller chose.</NodeContent>
+    <NodeConnectorsRight>
+      <NodeConnector>
+        <NodeConnectorPort />
+        <NodeConnectorLabel>Booked</NodeConnectorLabel>
+      </NodeConnector>
+      <NodeConnector>
+        <NodeConnectorPort />
+        <NodeConnectorLabel>No slots</NodeConnectorLabel>
+      </NodeConnector>
+    </NodeConnectorsRight>
+  </NodeCard>
+</GraphNode>;
+```
+
+Connectors are markup and CSS, like the node: a port marks where a wire ends, and
+drawing the wire is the canvas's job.
+
+## Parts
+
+| Part                                        | What it is                                                            |
+| ------------------------------------------- | --------------------------------------------------------------------- |
+| `NodeConnectorsLeft`, `NodeConnectorsRight` | A column of connectors on one edge of a node, level with its content. |
+| `NodeConnector`                             | One row: a port, and a label if it needs one.                         |
+| `NodeConnectorPort`                         | Where a wire ends. It sits centred on the card's edge.                |
+| `NodeConnectorLabel`                        | The connector's name. It truncates rather than widen the node.        |
+
+Both sides take the same connectors. A label sits the node's own inline padding from its
+edge, in line with the header and content. An area is as wide as its labels, so one with
+ports alone takes no room from the content, and the node grows to fit however many rows
+you give it. Rows are centred in the area; pass `justify-start` or `justify-end` to move
+them.
+
+An area can go inside `NodeCard` or beside it. Put it beside the card when the card
+animates and the ports should hold still.
+
+## Ports
+
+| Prop      | Values                       | Does                                                    |
+| --------- | ---------------------------- | ------------------------------------------------------- |
+| `shape`   | `circle`, `diamond`          | A diamond marks a link into or out of another graph.    |
+| `variant` | `outline`, `dashed`, `solid` | The ring alone, a dashed ring, or filled with the tone. |
+
+A port shows a halo in its tone when the pointer is over it.
+
+## Tone and state
+
+A connector takes its node's [tone](/docs/graph/graph-tone). Give one its own with
+`tone`, and its port and label follow:
+
+```tsx
+<NodeConnector tone="coral">
+  <NodeConnectorPort />
+  <NodeConnectorLabel>Declined</NodeConnectorLabel>
+</NodeConnector>
+```
+
+`active` marks the connector in use: the port fills and the label is tinted. States that
+depend on a wire being dragged belong to the canvas; set a `data-` attribute on the port
+and style from it.
+
+## On a canvas
+
+On a [Graph](/docs/graph/graph), render a port as React Flow's `Handle` and wires attach
+to it. The port keeps its place on the node's edge:
+
+```tsx
+import { Handle, Position } from "@xyflow/react";
+
+<NodeConnector>
+  <NodeConnectorPort
+    render={<Handle type="source" position={Position.Right} id="booked" />}
+  />
+  <NodeConnectorLabel>Booked</NodeConnectorLabel>
+</NodeConnector>;
+```
+
+A wire ends at the port's outer edge. Give a node with more than one output an `id` on
+each handle.
+
+## Styling
+
+Each part takes `className` and Base UI's `render` prop, and carries a `data-slot`
+(`node-connectors`, `node-connector`, `node-connector-port`, `node-connector-label`). An
+area also carries `data-side`, a connector `data-active` and `data-tone`, and a port
+`data-shape` and `data-variant`.
+
+Sizes live in variables on each area. They default from the node's type, so connectors
+follow the node's `size`; set them on the area to change them.
+
+| Variable                     | Sets                                                  |
+| ---------------------------- | ----------------------------------------------------- |
+| `--node-connector-height`    | The height of a row.                                  |
+| `--node-connector-port`      | The diameter of a port.                               |
+| `--node-connector-text`      | Label text.                                           |
+| `--node-connector-max-width` | How wide an area may grow before its labels truncate. |
+
+```tsx
+<NodeConnectorsRight className="[--node-connector-height:--spacing(7)] [--node-connector-port:--spacing(4)]">
+  …
+</NodeConnectorsRight>
+```
+
+## Key props
+
+| Prop      | On                  | Type                               | Description                                       |
+| --------- | ------------------- | ---------------------------------- | ------------------------------------------------- |
+| `tone`    | `NodeConnector`     | a palette tone, or your own        | The connector's own tone. Defaults to the node's. |
+| `active`  | `NodeConnector`     | `boolean`                          | The connector in use.                             |
+| `shape`   | `NodeConnectorPort` | `"circle" \| "diamond"`            | Default `circle`.                                 |
+| `variant` | `NodeConnectorPort` | `"outline" \| "dashed" \| "solid"` | Default `outline`.                                |
+| `render`  | Every part          | `ReactElement \| function`         | Render the part as another element.               |

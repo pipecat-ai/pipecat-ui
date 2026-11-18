@@ -1,0 +1,134 @@
+---
+title: Node Wire
+description: A wire between two ports, as a React Flow edge type — a curve in its tone with a drifting signal dot, that springs into place when it is connected.
+storybook: "/storybook/?path=/story/graph-node-wire--basic"
+---
+
+<GraphNodeWirePreview />
+
+## Installation
+
+<InstallTabs name="graph-node-wire" />
+
+This installs [Graph](/docs/graph/graph) too, the canvas a wire is drawn on, and adds
+[Motion](https://motion.dev), which drives the wire's springs.
+
+## Usage
+
+```tsx
+import { Graph } from "@/components/pipecat/graph/graph";
+import {
+  NodeWire,
+  NodeWireConnection,
+  type NodeWireEdge,
+} from "@/components/pipecat/graph/node-wire";
+
+const edgeTypes = { wire: NodeWire };
+
+const edges: NodeWireEdge[] = [
+  {
+    id: "ask-book",
+    type: "wire",
+    source: "ask",
+    target: "book",
+    data: { tone: "green" },
+  },
+];
+
+<Graph
+  nodes={nodes}
+  edges={edges}
+  edgeTypes={edgeTypes}
+  connectionLineComponent={NodeWireConnection}
+/>;
+```
+
+`NodeWire` is an edge type and `NodeWireConnection` is the line drawn while a wire is
+being dragged out of a port. Keep `edgeTypes` outside your component, as React Flow asks.
+
+## A wire
+
+A wire leaves its source port, arrives at its target, and carries a dot drifting along
+it. One that runs back to an earlier node hooks out to the right, travels underneath and
+hooks in from the left.
+
+Wires read left to right. One always leaves its source heading right and arrives at its
+target from the left, whatever `Position` its handles have, so put a node's outputs on
+its right edge and its inputs on its left. A handle on the top or bottom still connects,
+but the wire meets it sideways.
+
+What it looks like comes from the edge's `data`:
+
+| Field    | Type                                                  | Does                                                                            |
+| -------- | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `tone`   | a palette [tone](/docs/graph/graph-tone), or your own | The wire's colour. Left out, it takes the graph's.                              |
+| `dashed` | `boolean`                                             | A dashed wire with no dot, for a path that loops back.                          |
+| `signal` | `boolean`                                             | The dot drifting along the wire, showing which way it flows. On unless `false`. |
+| `active` | `boolean`                                             | The wire in use: heavier, with a halo in its tone.                              |
+| `bounce` | `string`                                              | Give it a new value to make the wire spring.                                    |
+
+A selected wire is drawn heavier, in the foreground colour.
+
+### A button on the wire
+
+The edge's `label` sits on the wire's middle. `NodeWireAction` is a button for that
+spot, in the wire's tone: a small ring that swells under the pointer, and inverts while
+it has a menu open or its wire is selected.
+
+```tsx
+{
+  id: "ask-book",
+  type: "wire",
+  source: "ask",
+  target: "book",
+  data: { tone: "green" },
+  label: <NodeWireAction aria-label="Add a step after Find a slot" onClick={add} />,
+}
+```
+
+It shows a plus unless you give it an icon of your own, and it needs a name.
+
+## Motion
+
+A wire is rigid while its nodes are dragged, so it tracks its ports exactly. It springs
+at two moments:
+
+- **When it appears with `bounce` set.** It unfurls from its source port. Set `bounce` on
+  the edge you add in `onConnect` and a new wire whips into place.
+- **When `bounce` changes.** It stays elastic for a little over a second. Change it
+  together with the wire's target and the wire whips across to the new port; changed on
+  its own, nothing moves, so there is nothing to see.
+
+```tsx
+const onConnect = (connection: Connection) =>
+  setEdges((edges) =>
+    addEdge(
+      { ...connection, type: "wire", data: { bounce: "connected" } },
+      edges,
+    ),
+  );
+```
+
+The line being drawn hangs like a loose rope, pulls taut when it snaps to a port that
+fits, and turns red and dashed over one that doesn't.
+
+The springs and the drifting dot both stop for people who ask for reduced motion.
+
+## Styling
+
+A wire is a `<g data-slot="node-wire">` carrying `data-tone` and `data-active`. Its paths
+are stroked with `stroke-graph-tone`, so it follows the
+[palette](/docs/graph/graph-tone#the-palette) and whatever tone is in scope. Its label is
+drawn in a `node-wire-label` element with the same tone, which carries `data-selected`
+while the wire is selected.
+
+## Key props
+
+`NodeWire` and `NodeWireConnection` take the props React Flow gives an edge type and a
+connection line. You set a wire up through its edge:
+
+| On the edge | Type                                            | Description                           |
+| ----------- | ----------------------------------------------- | ------------------------------------- |
+| `type`      | `"wire"`                                        | Whatever key you registered it under. |
+| `data`      | `{ tone?, signal?, dashed?, active?, bounce? }` | How the wire looks and moves.         |
+| `label`     | `ReactNode`                                     | Sits on the middle of the wire.       |
