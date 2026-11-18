@@ -17,7 +17,7 @@ It doesn't need a [Graph](/docs/graph/graph): a node is plain markup and works a
 
 ```tsx
 import {
-  Node,
+  GraphNode,
   NodeCard,
   NodeContent,
   NodeFooter,
@@ -25,7 +25,7 @@ import {
   NodeTitle,
 } from "@/components/pipecat/graph/node";
 
-<Node size="md">
+<GraphNode size="md">
   <NodeCard>
     <NodeHeader>
       <NodeTitle>Book appointment</NodeTitle>
@@ -33,7 +33,7 @@ import {
     <NodeContent>Holds the slot the caller chose.</NodeContent>
     <NodeFooter>needs patient · slot</NodeFooter>
   </NodeCard>
-</Node>;
+</GraphNode>;
 ```
 
 A node is markup and CSS: it draws no wires and holds no state. Ports go on its edges with
@@ -44,7 +44,7 @@ it on a canvas.
 
 | Part                                      | What it is                                                                            |
 | ----------------------------------------- | ------------------------------------------------------------------------------------- |
-| `Node`                                    | The node's box: its width, its scale and the tracks the parts sit on. Paints nothing. |
+| `GraphNode`                               | The node's box: its width, its scale and the tracks the parts sit on. Paints nothing. |
 | `NodeCard`                                | The surface: background, radius, ring.                                                |
 | `NodeHeader`, `NodeContent`, `NodeFooter` | The three rows. Leave any of them out and its row closes up.                          |
 | `NodeTitle`, `NodeDescription`            | Text, for a header or a footer.                                                       |
@@ -62,23 +62,23 @@ stays out of the rows.
 
 ### Why a box and a card
 
-`Node` is what a canvas positions and measures; `NodeCard` is what people see. Keeping
+`GraphNode` is what a canvas positions and measures; `NodeCard` is what people see. Keeping
 them apart lets the card animate without moving the box, and connectors line up whether
 they sit inside the card or beside it:
 
 ```tsx
-<Node>
+<GraphNode>
   <NodeCard render={<motion.div whileHover={{ scale: 1.05 }} />}>
     <NodeHeader>…</NodeHeader>
     <NodeContent>…</NodeContent>
   </NodeCard>
   {/* Outside the card: the ports hold still while the card lifts. */}
   <NodeConnectorsRight>…</NodeConnectorsRight>
-</Node>
+</GraphNode>
 ```
 
 Leave the card's overflow visible, since ports straddle its edge. Give a height to
-`Node`, not the card: the card fills the node's rows.
+`GraphNode`, not the card: the card fills the node's rows.
 
 ## Sizes and width
 
@@ -96,11 +96,11 @@ takes up the slack, while type, padding and both connector areas stay as `size` 
 
 ```tsx
 <div className="w-96">
-  <Node fluid>…</Node>
+  <GraphNode fluid>…</GraphNode>
 </div>
 ```
 
-`Node` is a size container named `node`, so content can respond to its width with
+`GraphNode` is a size container named `node`, so content can respond to its width with
 `@sm/node:` variants. That also means it takes its width from `size` or its parent,
 never from its content.
 
@@ -110,18 +110,18 @@ never from its content.
 connectors take the tone, and so does anything you style with the tone utilities:
 
 ```tsx
-<Node tone="green">
+<GraphNode tone="green">
   <NodeCard>
     <NodeHeader>
-      <NodeDescription className="text-tone-ink">Book</NodeDescription>
+      <NodeDescription className="text-graph-tone-ink">Book</NodeDescription>
     </NodeHeader>
     <NodeContent>
-      <span className="bg-tone-soft text-tone-ink grid size-14 place-items-center rounded-2xl">
+      <span className="bg-graph-tone-soft text-graph-tone-ink grid size-14 place-items-center rounded-2xl">
         <CalendarClockIcon />
       </span>
     </NodeContent>
   </NodeCard>
-</Node>
+</GraphNode>
 ```
 
 A node with no `tone` takes the one around it: its group's, its graph's, or `neutral`.
@@ -133,7 +133,7 @@ cards behind the node, in its tone. `NodeExpand` is its open button: you place i
 because it needs a name and something to do.
 
 ```tsx
-<Node variant="subflow" tone="purple">
+<GraphNode variant="subflow" tone="purple">
   <NodeCard>
     <NodeHeader>
       <NodeTitle>Scheduling</NodeTitle>
@@ -142,7 +142,7 @@ because it needs a name and something to do.
       </NodeAction>
     </NodeHeader>
   </NodeCard>
-</Node>
+</GraphNode>
 ```
 
 The stack hangs below the node's box and takes no room in the layout. Give a subflow's
@@ -165,10 +165,10 @@ picks it from the [palette](/docs/graph/graph-tone#the-palette), which lets one 
 stand for several things:
 
 ```tsx
-<Node tone="blue" status="active" statusTone="coral">
+<GraphNode tone="blue" status="active" statusTone="coral">
   <NodeCard>…</NodeCard>
   <NodeStatusBadge>Listening</NodeStatusBadge>
-</Node>
+</GraphNode>
 ```
 
 `NodeStatusBadge` says the status in words, which colour alone doesn't. It sits on the
@@ -184,7 +184,7 @@ people who ask for reduced motion.
 ## Styling
 
 Each part takes `className`, and a class you pass replaces the default it conflicts with.
-Geometry lives in variables on `Node`:
+Geometry lives in variables on `GraphNode`:
 
 | Variable                  | Sets                                              |
 | ------------------------- | ------------------------------------------------- |
@@ -200,18 +200,18 @@ Geometry lives in variables on `Node`:
 Connectors keep [their own variables](/docs/graph/graph-node-connector#styling).
 
 ```tsx
-<Node className="[--node-px:--spacing(4)] [--node-radius:--spacing(6.5)]">
+<GraphNode className="[--node-px:--spacing(4)] [--node-radius:--spacing(6.5)]">
   <NodeCard className="shadow-lg ring-0">…</NodeCard>
-</Node>
+</GraphNode>
 ```
 
 Lengths are steps of Tailwind's `--spacing`, so setting `--spacing` on a node rescales
 it. The radius follows your theme's `--radius` unless you set it.
 
-Every part carries a `data-slot` (`node`, `node-card`, `node-header` and so on). `Node`
+Every part carries a `data-slot` (`node`, `node-card`, `node-header` and so on). `GraphNode`
 also carries `data-size`, `data-variant`, `data-fluid` and `data-tone`, and `data-status`
 while its status isn't `idle`. Other state is yours to add: put `data-selected` or
-`aria-disabled` on `Node` and style any part from it with `group-data-selected/node:`.
+`aria-disabled` on `GraphNode` and style any part from it with `group-data-selected/node:`.
 
 Restyle one status the same way, and reach its tone through `--node-status`. This
 card holds still while it is active:
@@ -230,10 +230,10 @@ link while keeping its slot, classes and handlers.
 
 | Prop         | On         | Type                                       | Description                                                                          |
 | ------------ | ---------- | ------------------------------------------ | ------------------------------------------------------------------------------------ |
-| `size`       | Node       | `"sm" \| "md" \| "lg" \| "xl"`             | Width, padding and type. Default `md`.                                               |
-| `fluid`      | Node       | `boolean`                                  | Fill the parent's width. Nothing else changes size.                                  |
-| `variant`    | Node       | `"default" \| "subflow"`                   | `subflow` draws a stack of cards behind the node.                                    |
-| `tone`       | Node       | a palette tone, or your own                | The tone the node's parts and connectors take.                                       |
-| `status`     | Node       | `"idle" \| "active" \| "guard" \| "error"` | What a call is doing here. Default `idle`.                                           |
-| `statusTone` | Node       | a palette tone, or your own                | The status's tone. Default `amber` for a guard, `red` for an error, else the node's. |
+| `size`       | GraphNode  | `"sm" \| "md" \| "lg" \| "xl"`             | Width, padding and type. Default `md`.                                               |
+| `fluid`      | GraphNode  | `boolean`                                  | Fill the parent's width. Nothing else changes size.                                  |
+| `variant`    | GraphNode  | `"default" \| "subflow"`                   | `subflow` draws a stack of cards behind the node.                                    |
+| `tone`       | GraphNode  | a palette tone, or your own                | The tone the node's parts and connectors take.                                       |
+| `status`     | GraphNode  | `"idle" \| "active" \| "guard" \| "error"` | What a call is doing here. Default `idle`.                                           |
+| `statusTone` | GraphNode  | a palette tone, or your own                | The status's tone. Default `amber` for a guard, `red` for an error, else the node's. |
 | `render`     | Every part | `ReactElement \| function`                 | Render the part as another element, keeping its attributes.                          |

@@ -11,37 +11,37 @@ storybook: "/storybook/?path=/story/graph-tones--palette"
 <InstallTabs name="graph-tone" />
 
 Every graph part installs this with it, so you rarely add it yourself. It puts the
-palette in your theme: a `--graph-*` variable for each tone, and the `tone` colours for
-Tailwind.
+palette in your theme: a `--graph-*` variable for each tone, and the `graph-tone` colours
+for Tailwind.
 
 ## Tones
 
 A tone is a named colour. Give `tone` to a [`Graph`](/docs/graph/graph), a
-[`NodeGroup`](/docs/graph/graph-node-group), a [`Node`](/docs/graph/graph-node) or a
+[`NodeGroup`](/docs/graph/graph-node-group), a [`GraphNode`](/docs/graph/graph-node) or a
 [`NodeConnector`](/docs/graph/graph-node-connector), and that element and everything
 inside it is in that tone until something inside names another:
 
 ```tsx
-<Node tone="green">
+<GraphNode tone="green">
   {/* Green, from the node. */}
   <NodeConnector>…</NodeConnector>
   {/* Coral, its own. */}
   <NodeConnector tone="coral">…</NodeConnector>
-</Node>
+</GraphNode>
 ```
 
 Parts never name a colour. They use four utilities that read the tone in scope, and so
 can your own content:
 
-| Utility         | Is                                              | Used for                        |
-| --------------- | ----------------------------------------------- | ------------------------------- |
-| `bg-tone`       | The tone itself.                                | A port's ring, a filled port.   |
-| `bg-tone-mid`   | The tone, part-way to the card colour.          | The stack behind a subflow.     |
-| `bg-tone-soft`  | A tint of the tone on the card colour.          | A group's island, icon tiles.   |
-| `text-tone-ink` | The tone, darkened or lightened until it reads. | Kind words, icons, tinted text. |
+| Utility               | Is                                              | Used for                        |
+| --------------------- | ----------------------------------------------- | ------------------------------- |
+| `bg-graph-tone`       | The tone itself.                                | A port's ring, a filled port.   |
+| `bg-graph-tone-mid`   | The tone, part-way to the card colour.          | The stack behind a subflow.     |
+| `bg-graph-tone-soft`  | A tint of the tone on the card colour.          | A group's island, icon tiles.   |
+| `text-graph-tone-ink` | The tone, darkened or lightened until it reads. | Kind words, icons, tinted text. |
 
-Any of them works as a text, border, ring or fill colour: `border-tone`, `text-tone-ink`,
-`ring-tone/40`.
+Any of them works as a text, border, ring or fill colour: `border-graph-tone`,
+`text-graph-tone-ink`, `ring-graph-tone/40`.
 
 ## The palette
 
@@ -75,7 +75,7 @@ A tone is only a name. Define `--graph-<name>` where your theme lives and use th
 ```
 
 ```tsx
-<Node tone="brand">…</Node>
+<GraphNode tone="brand">…</GraphNode>
 ```
 
 That one variable is enough: the mid, soft and ink shades are mixed from it and your
@@ -99,7 +99,8 @@ change it for what is inside:
 <Graph className="[--graph-green:var(--color-lime-600)]">…</Graph>
 ```
 
-A name with no `--graph-<name>` variable falls back to `neutral`.
+A name with no `--graph-<name>` variable falls back to `neutral`. Three names are taken,
+`tone`, `canvas` and `grid`: the graph has variables of its own by those names.
 
 ## Outside a part
 
@@ -108,7 +109,10 @@ A name with no `--graph-<name>` variable falls back to `neutral`.
 ```tsx
 import { graphToneStyle } from "@/components/pipecat/graph/tone";
 
-<span style={graphToneStyle("green")} className="bg-tone-soft text-tone-ink">
+<span
+  style={graphToneStyle("green")}
+  className="bg-graph-tone-soft text-graph-tone-ink"
+>
   Booked
 </span>;
 ```

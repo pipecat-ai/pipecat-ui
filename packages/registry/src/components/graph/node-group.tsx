@@ -85,10 +85,10 @@ export function NodeGroupIsland({
     props: mergeProps<"div">(
       {
         className: cn(
-          "bg-tone-soft grid min-w-0 rounded-(--node-group-radius) px-(--node-group-px) pt-[calc(var(--node-group-py)*2)] pb-(--node-group-py)",
+          "bg-graph-tone-soft grid min-w-0 rounded-(--node-group-radius) px-(--node-group-px) pt-[calc(var(--node-group-py)*2)] pb-(--node-group-py)",
           // An outline, so an empty group is the same size as a full one, and
           // even padding, so what it shows sits in the island's centre.
-          "outline-tone-mid group-data-empty/node-group:min-h-54 group-data-empty/node-group:min-w-72 group-data-empty/node-group:pt-(--node-group-py) group-data-empty/node-group:outline-2 group-data-empty/node-group:-outline-offset-2 group-data-empty/node-group:outline-dashed",
+          "outline-graph-tone-mid group-data-empty/node-group:min-h-54 group-data-empty/node-group:min-w-72 group-data-empty/node-group:pt-(--node-group-py) group-data-empty/node-group:outline-2 group-data-empty/node-group:-outline-offset-2 group-data-empty/node-group:outline-dashed",
           className,
         ),
       },
@@ -163,7 +163,7 @@ export function NodeGroupTitle({
     props: mergeProps<"span">(
       {
         className: cn(
-          "font-heading before:bg-tone flex items-center gap-1.5 font-semibold before:size-[calc(var(--node-group-text)-var(--spacing))] before:shrink-0 before:rounded-full",
+          "font-heading before:bg-graph-tone flex items-center gap-1.5 font-semibold before:size-[calc(var(--node-group-text)-var(--spacing))] before:shrink-0 before:rounded-full",
           className,
         ),
       },
@@ -188,7 +188,7 @@ export function NodeGroupEmpty({
       {
         className: cn(
           // Centred in the island however the island lays out its nodes.
-          "text-tone-ink flex flex-col items-center justify-center gap-2 place-self-center text-center text-[length:calc(var(--node-group-text)-var(--spacing)/2)] leading-snug font-medium",
+          "text-graph-tone-ink flex flex-col items-center justify-center gap-2 place-self-center text-center text-[length:calc(var(--node-group-text)-var(--spacing)/2)] leading-snug font-medium",
           className,
         ),
       },
@@ -223,11 +223,11 @@ export function NodeGroupAdd({
       {...props}
       data-slot="node-group-add"
       className={cn(
-        "border-tone bg-card text-tone-ink size-[calc(var(--node-group-text)*4)] rounded-full border-2 border-dashed [&_svg:not([class*='size-'])]:size-[calc(var(--node-group-text)+var(--spacing)*2.5)]",
-        "hover:bg-tone-mid/40 hover:text-tone-ink hover:border-solid",
-        "aria-expanded:bg-tone aria-expanded:text-card aria-expanded:border-solid",
+        "border-graph-tone bg-card text-graph-tone-ink size-[calc(var(--node-group-text)*4)] rounded-full border-2 border-dashed [&_svg:not([class*='size-'])]:size-[calc(var(--node-group-text)+var(--spacing)*2.5)]",
+        "hover:bg-graph-tone-mid/40 hover:text-graph-tone-ink hover:border-solid",
+        "aria-expanded:bg-graph-tone aria-expanded:text-card aria-expanded:border-solid",
         // The stock outline button turns grey in dark mode; this one keeps its tone.
-        "dark:border-tone dark:bg-card dark:hover:bg-tone-mid/40 dark:aria-expanded:bg-tone",
+        "dark:border-graph-tone dark:bg-card dark:hover:bg-graph-tone-mid/40 dark:aria-expanded:bg-graph-tone",
         className,
       )}
     >

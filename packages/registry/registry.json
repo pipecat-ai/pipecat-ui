@@ -594,10 +594,10 @@
       ],
       "cssVars": {
         "theme": {
-          "color-tone": "var(--tone, var(--graph-neutral))",
-          "color-tone-soft": "var(--tone-soft, color-mix(in oklab, var(--tone, var(--graph-neutral)) 14%, var(--card)))",
-          "color-tone-mid": "var(--tone-mid, color-mix(in oklab, var(--tone, var(--graph-neutral)) 45%, var(--card)))",
-          "color-tone-ink": "var(--tone-ink, color-mix(in oklab, var(--tone, var(--graph-neutral)) 55%, var(--foreground)))"
+          "color-graph-tone": "var(--graph-tone, var(--graph-neutral))",
+          "color-graph-tone-soft": "var(--graph-tone-soft, color-mix(in oklab, var(--graph-tone, var(--graph-neutral)) 14%, var(--card)))",
+          "color-graph-tone-mid": "var(--graph-tone-mid, color-mix(in oklab, var(--graph-tone, var(--graph-neutral)) 45%, var(--card)))",
+          "color-graph-tone-ink": "var(--graph-tone-ink, color-mix(in oklab, var(--graph-tone, var(--graph-neutral)) 55%, var(--foreground)))"
         },
         "light": {
           "graph-neutral": "var(--muted-foreground)",
@@ -620,7 +620,7 @@
           "graph-red": "var(--color-red-400)"
         }
       },
-      "docs": "A tone prop on Graph, NodeGroup, Node, NodeConnector or a NodeWire's data puts a palette colour in scope; style from it with bg-tone, bg-tone-soft, bg-tone-mid and text-tone-ink. Change a tone by editing its --graph-* variable in your CSS, or add one: define --graph-<name> and use tone=\"<name>\".",
+      "docs": "A tone prop on Graph, NodeGroup, GraphNode, NodeConnector or a NodeWire's data puts a palette colour in scope; style from it with bg-graph-tone, bg-graph-tone-soft, bg-graph-tone-mid and text-graph-tone-ink. Change a tone by editing its --graph-* variable in your CSS, or add one: define --graph-<name> and use tone=\"<name>\".",
       "categories": ["graph"]
     },
     {
@@ -702,7 +702,7 @@
           }
         }
       },
-      "docs": "Compose Node > NodeCard > NodeHeader, NodeContent and NodeFooter; add connectors with @pipecat/graph-node-connector. Node is a size container: give it a width with size, or fluid to fill its parent. Give a node a tone to colour it from the graph palette. During playback set status (active, guard, error) and statusTone on Node, and put a NodeStatusBadge inside it to say the status in words. Restyle through className and the --node-* variables; every part takes Base UI's render prop.",
+      "docs": "Compose GraphNode > NodeCard > NodeHeader, NodeContent and NodeFooter; add connectors with @pipecat/graph-node-connector. GraphNode is a size container: give it a width with size, or fluid to fill its parent. Give a node a tone to colour it from the graph palette. During playback set status (active, guard, error) and statusTone on GraphNode, and put a NodeStatusBadge inside it to say the status in words. Restyle through className and the --node-* variables; every part takes Base UI's render prop.",
       "categories": ["graph"]
     },
     {
@@ -722,7 +722,7 @@
           "target": "components/pipecat/graph/node-connector.tsx"
         }
       ],
-      "docs": "Put NodeConnectorsLeft or NodeConnectorsRight in a Node, with one NodeConnector per row holding a NodeConnectorPort and an optional NodeConnectorLabel. Size connectors with the --node-connector-* variables on the area.",
+      "docs": "Put NodeConnectorsLeft or NodeConnectorsRight in a GraphNode, with one NodeConnector per row holding a NodeConnectorPort and an optional NodeConnectorLabel. Size connectors with the --node-connector-* variables on the area.",
       "categories": ["graph"]
     },
     {

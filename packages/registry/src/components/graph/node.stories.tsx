@@ -4,8 +4,8 @@ import { motion } from "motion/react";
 
 import {
   NodeAction,
-  Node,
-  type NodeProps,
+  GraphNode,
+  type GraphNodeProps,
   NodeCard,
   NodeContent,
   NodeDescription,
@@ -40,7 +40,7 @@ const OUTPUTS = ["Booked", "No slots", "Declined"] as const;
 
 const meta = {
   title: "Graph/Node",
-  component: Node,
+  component: GraphNode,
   args: {
     size: "md",
     fluid: false,
@@ -56,7 +56,7 @@ const meta = {
     statusTone: { control: "select", options: [undefined, ...TONES] },
     render: { control: false },
   },
-} satisfies Meta<typeof Node>;
+} satisfies Meta<typeof GraphNode>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
@@ -65,15 +65,15 @@ function ExampleNode({
   outputs = OUTPUTS,
   badge,
   ...props
-}: NodeProps & { outputs?: readonly string[]; badge?: React.ReactNode }) {
+}: GraphNodeProps & { outputs?: readonly string[]; badge?: React.ReactNode }) {
   const subflow = props.variant === "subflow";
   const shape = subflow ? "diamond" : "circle";
   return (
-    <Node {...props}>
+    <GraphNode {...props}>
       <NodeCard>
         <NodeHeader>
           <NodeTitle>Book appointment</NodeTitle>
-          <NodeDescription className="text-tone-ink">
+          <NodeDescription className="text-graph-tone-ink">
             {subflow ? "Subflow" : "Action"}
           </NodeDescription>
           <NodeAction>
@@ -109,7 +109,7 @@ function ExampleNode({
         </NodeFooter>
       </NodeCard>
       {badge ? <NodeStatusBadge>{badge}</NodeStatusBadge> : null}
-    </Node>
+    </GraphNode>
   );
 }
 
@@ -238,7 +238,7 @@ const CONNECTORS =
 function ThemedNode({
   lift = false,
   ...props
-}: NodeProps & { lift?: boolean }) {
+}: GraphNodeProps & { lift?: boolean }) {
   const exits = (
     <NodeConnectorsRight className={CONNECTORS}>
       {EXITS.map((exit) => (
@@ -259,7 +259,7 @@ function ThemedNode({
     </NodeConnectorsLeft>
   );
   return (
-    <Node
+    <GraphNode
       {...props}
       tone="green"
       className="min-h-44 [--node-radius:--spacing(6.5)] [--node-text-description:--spacing(2.5)]"
@@ -277,13 +277,13 @@ function ThemedNode({
         }
       >
         <NodeHeader className="min-h-9 py-0 pt-1.5 pr-1.5 pl-3.5">
-          <NodeDescription className="text-tone-ink font-mono font-bold tracking-[0.12em] uppercase">
+          <NodeDescription className="text-graph-tone-ink font-mono font-bold tracking-[0.12em] uppercase">
             Book
           </NodeDescription>
         </NodeHeader>
         {lift ? null : entry}
         <NodeContent className="items-center justify-center px-3 py-1.5">
-          <span className="bg-tone-soft text-tone-ink grid size-14 place-items-center rounded-[--spacing(5.5)]">
+          <span className="bg-graph-tone-soft text-graph-tone-ink grid size-14 place-items-center rounded-[--spacing(5.5)]">
             <CalendarClockIcon aria-hidden className="size-6.5" />
           </span>
         </NodeContent>
@@ -296,7 +296,7 @@ function ThemedNode({
       </NodeCard>
       {lift ? entry : null}
       {lift ? exits : null}
-    </Node>
+    </GraphNode>
   );
 }
 

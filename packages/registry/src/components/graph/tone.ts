@@ -23,9 +23,9 @@ export function graphToneStyle(
   // A tone is spliced into a value, so anything but a plain name is ignored.
   if (tone === undefined || !/^[\w-]+$/.test(tone)) return undefined;
   return {
-    "--tone": `var(--graph-${tone}, var(--graph-neutral))`,
-    "--tone-soft": `var(--graph-${tone}-soft)`,
-    "--tone-mid": `var(--graph-${tone}-mid)`,
-    "--tone-ink": `var(--graph-${tone}-ink)`,
+    "--graph-tone": `var(--graph-${tone}, var(--graph-neutral))`,
+    "--graph-tone-soft": `var(--graph-${tone}-soft)`,
+    "--graph-tone-mid": `var(--graph-${tone}-mid)`,
+    "--graph-tone-ink": `var(--graph-${tone}-ink)`,
   } as CSSProperties;
 }

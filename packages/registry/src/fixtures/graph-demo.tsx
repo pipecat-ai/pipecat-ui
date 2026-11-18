@@ -2,7 +2,7 @@ import {
   addEdge,
   type Connection,
   Handle,
-  type Node as FlowNode,
+  type Node,
   type NodeProps,
   Panel,
   Position,
@@ -18,7 +18,7 @@ import {
   type GraphGroupPacking,
 } from "@/components/pipecat/graph/graph";
 import {
-  Node,
+  GraphNode,
   NodeCard,
   NodeDescription,
   NodeHeader,
@@ -51,21 +51,21 @@ import { Button } from "@/components/ui/button";
  * and wires between them. Synthetic, like everything else in the fixtures.
  */
 
-type StepNode = FlowNode<
+type StepNode = Node<
   { title: string; kind: string; tone: GraphTone; exits: string[] },
   "step"
 >;
-type GroupNode = FlowNode<{ title: string; tone: GraphTone }, "group">;
+type GroupNode = Node<{ title: string; tone: GraphTone }, "group">;
 export type DemoNode = StepNode | GroupNode;
 
 /** A step: a node whose ports are React Flow handles. */
 function Step({ data, dragging }: NodeProps<StepNode>) {
   return (
-    <Node size="sm" tone={data.tone} data-dragging={dragging || undefined}>
+    <GraphNode size="sm" tone={data.tone} data-dragging={dragging || undefined}>
       <NodeCard className="transition-shadow group-data-dragging/node:shadow-xl">
         <NodeHeader>
           <NodeTitle>{data.title}</NodeTitle>
-          <NodeDescription className="text-tone-ink">
+          <NodeDescription className="text-graph-tone-ink">
             {data.kind}
           </NodeDescription>
         </NodeHeader>
@@ -89,7 +89,7 @@ function Step({ data, dragging }: NodeProps<StepNode>) {
           ))}
         </NodeConnectorsRight>
       </NodeCard>
-    </Node>
+    </GraphNode>
   );
 }
 

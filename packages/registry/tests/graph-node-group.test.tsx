@@ -51,11 +51,13 @@ describe("NodeGroup", () => {
     const { container, rerender } = render(<NodeGroup tone="green" />);
     const group = slot(container, "node-group");
     expect(group).toHaveAttribute("data-tone", "green");
-    expect(group?.style.getPropertyValue("--tone")).toContain("--graph-green");
+    expect(group?.style.getPropertyValue("--graph-tone")).toContain(
+      "--graph-green",
+    );
 
     rerender(<NodeGroup />);
     expect(group).not.toHaveAttribute("data-tone");
-    expect(group?.style.getPropertyValue("--tone")).toBe("");
+    expect(group?.style.getPropertyValue("--graph-tone")).toBe("");
   });
 
   it("marks an empty group so its island is outlined and centres its slate", () => {
@@ -113,7 +115,7 @@ describe("NodeGroup", () => {
     const island = screen.getByRole("region", { name: "Island" });
     expect(island).toHaveAttribute("data-slot", "node-group-island");
     expect(island).toHaveClass("bg-muted");
-    expect(island).not.toHaveClass("bg-tone-soft");
+    expect(island).not.toHaveClass("bg-graph-tone-soft");
   });
 
   it("gives an empty group an add button that keeps to its tone", async () => {
@@ -124,9 +126,16 @@ describe("NodeGroup", () => {
       name: "Add a step to Book it",
     });
     expect(button).toHaveAttribute("data-slot", "node-group-add");
-    expect(button).toHaveClass("border-tone", "bg-card", "text-tone-ink");
+    expect(button).toHaveClass(
+      "border-graph-tone",
+      "bg-card",
+      "text-graph-tone-ink",
+    );
     // Under the pointer it tints with the tone, not the stock button's grey.
-    expect(button).toHaveClass("hover:bg-tone-mid/40", "hover:text-tone-ink");
+    expect(button).toHaveClass(
+      "hover:bg-graph-tone-mid/40",
+      "hover:text-graph-tone-ink",
+    );
     expect(button).not.toHaveClass("hover:bg-muted");
     expect(button).not.toHaveClass("hover:text-foreground");
     expect(button).not.toHaveClass("dark:hover:bg-input/50");

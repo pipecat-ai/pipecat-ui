@@ -1,13 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import {
-  Handle,
-  type Node as FlowNode,
-  type NodeProps,
-  Position,
-} from "@xyflow/react";
+import { Handle, type Node, type NodeProps, Position } from "@xyflow/react";
 import { Graph } from "@/components/pipecat/graph/graph";
 import {
-  Node,
+  GraphNode,
   NodeCard,
   NodeHeader,
   NodeTitle,
@@ -32,11 +27,11 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-type Dot = FlowNode<{ title: string }, "dot">;
+type Dot = Node<{ title: string }, "dot">;
 
 function Dot({ data }: NodeProps<Dot>) {
   return (
-    <Node size="sm" className="w-36">
+    <GraphNode size="sm" className="w-36">
       <NodeCard>
         <NodeHeader>
           <NodeTitle>{data.title}</NodeTitle>
@@ -56,7 +51,7 @@ function Dot({ data }: NodeProps<Dot>) {
           </NodeConnector>
         </NodeConnectorsRight>
       </NodeCard>
-    </Node>
+    </GraphNode>
   );
 }
 

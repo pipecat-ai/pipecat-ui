@@ -26,7 +26,7 @@ const nodeVariants = cva(
     "[--node-body-pb:var(--node-py)] [--node-body-pt:var(--node-py)] has-data-[slot=node-footer]:[--node-body-pb:0px] has-data-[slot=node-header]:[--node-body-pt:0px]",
     // A status takes the node's own tone until it is given one. The tint is
     // its soft shade, mixed from the tone if none is pinned.
-    "[--node-status-soft:var(--tone-soft)] [--node-status-tint:var(--node-status-soft,color-mix(in_oklab,var(--node-status)_14%,var(--card)))] [--node-status:var(--tone,var(--graph-neutral))]",
+    "[--node-status-soft:var(--graph-tone-soft)] [--node-status-tint:var(--node-status-soft,color-mix(in_oklab,var(--node-status)_14%,var(--card)))] [--node-status:var(--graph-tone,var(--graph-neutral))]",
   ],
   {
     variants: {
@@ -60,8 +60,8 @@ const nodeVariants = cva(
         default: "",
         // Two cards peeking out below, in the node's tone: it holds a graph of its own.
         subflow: [
-          "before:absolute before:inset-x-4 before:-bottom-3.5 before:-z-1 before:h-8 before:rounded-(--node-radius) before:bg-tone-mid/50",
-          "after:absolute after:inset-x-2 after:-bottom-2 after:-z-1 after:h-8 after:rounded-(--node-radius) after:bg-tone-mid",
+          "before:absolute before:inset-x-4 before:-bottom-3.5 before:-z-1 before:h-8 before:rounded-(--node-radius) before:bg-graph-tone-mid/50",
+          "after:absolute after:inset-x-2 after:-bottom-2 after:-z-1 after:h-8 after:rounded-(--node-radius) after:bg-graph-tone-mid",
         ],
       },
     },
@@ -85,20 +85,20 @@ function statusToneStyle(tone: GraphTone | undefined) {
   const scope = graphToneStyle(tone) as Record<string, string> | undefined;
   return (
     scope && {
-      "--node-status": scope["--tone"],
-      "--node-status-soft": scope["--tone-soft"],
+      "--node-status": scope["--graph-tone"],
+      "--node-status-soft": scope["--graph-tone-soft"],
     }
   );
 }
 
-export interface NodeProps extends useRender.ComponentProps<"div"> {
+export interface GraphNodeProps extends useRender.ComponentProps<"div"> {
   /** Width, padding, type and connector sizes. */
   size?: NodeSize;
   /** Fill the parent's width. Type, padding and connectors keep their size. */
   fluid?: boolean;
   /** `subflow` draws a stack of cards behind the node. */
   variant?: NonNullable<VariantProps<typeof nodeVariants>["variant"]>;
-  /** The palette tone the node's parts take: ports, the stack, `bg-tone-soft`. */
+  /** The palette tone the node's parts take: ports, the stack, `bg-graph-tone-soft`. */
   tone?: GraphTone;
   /**
    * What a call is doing here, shown on the card: `active` rings it and
@@ -117,7 +117,7 @@ export interface NodeProps extends useRender.ComponentProps<"div"> {
  * paints nothing and is the size container, so it needs a width from `size`
  * or its parent, never from its content.
  */
-export function Node({
+export function GraphNode({
   size = "md",
   fluid = false,
   variant = "default",
@@ -127,7 +127,7 @@ export function Node({
   className,
   render,
   ...props
-}: NodeProps) {
+}: GraphNodeProps) {
   return useRender({
     defaultTagName: "div",
     render,
@@ -284,7 +284,7 @@ export function NodeExpand({ className, children, ...props }: NodeExpandProps) {
       {...props}
       data-slot="node-expand"
       className={cn(
-        "bg-tone-soft text-tone-ink hover:bg-tone-mid/50 aria-expanded:bg-tone-mid/50 aria-expanded:text-tone-ink",
+        "bg-graph-tone-soft text-graph-tone-ink hover:bg-graph-tone-mid/50 aria-expanded:bg-graph-tone-mid/50 aria-expanded:text-graph-tone-ink",
         className,
       )}
     >

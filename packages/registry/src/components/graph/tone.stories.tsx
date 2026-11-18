@@ -24,10 +24,18 @@ type Story = StoryObj<typeof meta>;
 function Swatches({ name }: { name: string }) {
   return (
     <div className="flex items-center gap-2">
-      <span className="bg-tone size-8 rounded-md" title="bg-tone" />
-      <span className="bg-tone-mid size-8 rounded-md" title="bg-tone-mid" />
-      <span className="bg-tone-soft size-8 rounded-md" title="bg-tone-soft" />
-      <span className="text-tone-ink ml-2 text-sm font-medium">{name}</span>
+      <span className="bg-graph-tone size-8 rounded-md" title="bg-graph-tone" />
+      <span
+        className="bg-graph-tone-mid size-8 rounded-md"
+        title="bg-graph-tone-mid"
+      />
+      <span
+        className="bg-graph-tone-soft size-8 rounded-md"
+        title="bg-graph-tone-soft"
+      />
+      <span className="text-graph-tone-ink ml-2 text-sm font-medium">
+        {name}
+      </span>
     </div>
   );
 }

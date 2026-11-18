@@ -1,7 +1,7 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { Node } from "@/components/pipecat/graph/node";
+import { GraphNode } from "@/components/pipecat/graph/node";
 import {
   NodeConnector,
   NodeConnectorLabel,
@@ -17,7 +17,7 @@ const all = (container: HTMLElement, name: string) => [
 describe("NodeConnector", () => {
   it("exposes each part and the side of each area for styling", () => {
     const { container } = render(
-      <Node>
+      <GraphNode>
         <NodeConnectorsLeft>
           <NodeConnector>
             <NodeConnectorPort />
@@ -29,7 +29,7 @@ describe("NodeConnector", () => {
             <NodeConnectorLabel>Booked</NodeConnectorLabel>
           </NodeConnector>
         </NodeConnectorsRight>
-      </Node>,
+      </GraphNode>,
     );
 
     expect(
@@ -59,7 +59,7 @@ describe("NodeConnector", () => {
 
   it("takes the node's tone unless it is given its own", () => {
     const { container } = render(
-      <Node tone="green">
+      <GraphNode tone="green">
         <NodeConnectorsRight>
           <NodeConnector>
             <NodeConnectorPort />
@@ -68,13 +68,15 @@ describe("NodeConnector", () => {
             <NodeConnectorPort />
           </NodeConnector>
         </NodeConnectorsRight>
-      </Node>,
+      </GraphNode>,
     );
     const [inherits, own] = all(container, "node-connector");
     expect(inherits).not.toHaveAttribute("data-tone");
-    expect(inherits?.style.getPropertyValue("--tone")).toBe("");
+    expect(inherits?.style.getPropertyValue("--graph-tone")).toBe("");
     expect(own).toHaveAttribute("data-tone", "coral");
-    expect(own?.style.getPropertyValue("--tone")).toContain("--graph-coral");
+    expect(own?.style.getPropertyValue("--graph-tone")).toContain(
+      "--graph-coral",
+    );
   });
 
   it("exposes a port's shape and style, and a connector in use", () => {
@@ -91,13 +93,13 @@ describe("NodeConnector", () => {
     const [plain, dashed, solid] = all(container, "node-connector-port");
     expect(plain).toHaveAttribute("data-shape", "circle");
     expect(plain).toHaveAttribute("data-variant", "outline");
-    expect(plain).toHaveClass("rounded-full", "bg-card", "border-tone");
+    expect(plain).toHaveClass("rounded-full", "bg-card", "border-graph-tone");
     // The halo on hover is there by default, in the port's tone.
-    expect(plain).toHaveClass("hover:outline-tone/30");
+    expect(plain).toHaveClass("hover:outline-graph-tone/30");
     expect(dashed).toHaveAttribute("data-shape", "diamond");
     expect(dashed).toHaveClass("rotate-45", "border-dashed");
     expect(dashed).not.toHaveClass("rounded-full");
-    expect(solid).toHaveClass("bg-tone");
+    expect(solid).toHaveClass("bg-graph-tone");
     expect(solid).not.toHaveClass("bg-card");
 
     rerender(<NodeConnector active />);

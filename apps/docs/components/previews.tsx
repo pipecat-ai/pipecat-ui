@@ -73,7 +73,7 @@ import {
 } from "@/components/pipecat/graph/graph";
 import {
   NodeAction,
-  Node,
+  GraphNode,
   NodeCard,
   NodeContent,
   NodeDescription,
@@ -2283,11 +2283,11 @@ export function GraphTonePreview() {
         style={graphToneStyle(tone)}
         className="flex flex-wrap items-center justify-center gap-x-12 gap-y-8"
       >
-        <Node size="sm" tone={toneProp(nodeTone)}>
+        <GraphNode size="sm" tone={toneProp(nodeTone)}>
           <NodeCard>
             <NodeHeader>
               <NodeTitle>Greet the caller</NodeTitle>
-              <NodeDescription className="text-tone-ink">
+              <NodeDescription className="text-graph-tone-ink">
                 Speech
               </NodeDescription>
             </NodeHeader>
@@ -2306,7 +2306,7 @@ export function GraphTonePreview() {
               </NodeConnector>
             </NodeConnectorsRight>
           </NodeCard>
-        </Node>
+        </GraphNode>
         <ul className="flex flex-col gap-1.5">
           {GRAPH_TONES.map((name) => (
             <li
@@ -2314,10 +2314,10 @@ export function GraphTonePreview() {
               className="flex items-center gap-1.5"
               style={graphToneStyle(name)}
             >
-              <span className="bg-tone size-5 rounded-sm" />
-              <span className="bg-tone-mid size-5 rounded-sm" />
-              <span className="bg-tone-soft size-5 rounded-sm" />
-              <span className="text-tone-ink ml-1.5 font-mono text-xs">
+              <span className="bg-graph-tone size-5 rounded-sm" />
+              <span className="bg-graph-tone-mid size-5 rounded-sm" />
+              <span className="bg-graph-tone-soft size-5 rounded-sm" />
+              <span className="text-graph-tone-ink ml-1.5 font-mono text-xs">
                 {name}
               </span>
             </li>
@@ -2589,7 +2589,7 @@ export function GraphNodePreview() {
         className="flex max-w-full justify-center"
         style={{ width: `${width}rem` }}
       >
-        <Node
+        <GraphNode
           size={size}
           fluid={fluid}
           variant={variant}
@@ -2604,7 +2604,7 @@ export function GraphNodePreview() {
             {header && (
               <NodeHeader>
                 <NodeTitle>Book appointment</NodeTitle>
-                <NodeDescription className="text-tone-ink">
+                <NodeDescription className="text-graph-tone-ink">
                   {subflow ? "Subflow" : "Action"}
                 </NodeDescription>
                 <NodeAction>
@@ -2655,7 +2655,7 @@ export function GraphNodePreview() {
               </NodeFooter>
             )}
           </NodeCard>
-        </Node>
+        </GraphNode>
       </div>
     </PreviewShell>
   );
@@ -2737,11 +2737,11 @@ export function GraphNodeConnectorPreview() {
         </>
       }
     >
-      <Node size={size} tone={nodeTone}>
+      <GraphNode size={size} tone={nodeTone}>
         <NodeCard>
           <NodeHeader>
             <NodeTitle>Verify identity</NodeTitle>
-            <NodeDescription className="text-tone-ink">
+            <NodeDescription className="text-graph-tone-ink">
               Question
             </NodeDescription>
           </NodeHeader>
@@ -2755,7 +2755,7 @@ export function GraphNodeConnectorPreview() {
             </NodeConnector>
           </Connectors>
         </NodeCard>
-      </Node>
+      </GraphNode>
     </PreviewShell>
   );
 }
@@ -2871,11 +2871,11 @@ export function GraphNodeGroupPreview() {
             </NodeGroupEmpty>
           ) : (
             GROUP_STEPS.slice(0, steps).map((step) => (
-              <Node key={step.title} size="sm" tone={toneProp(nodeTone)}>
+              <GraphNode key={step.title} size="sm" tone={toneProp(nodeTone)}>
                 <NodeCard>
                   <NodeHeader>
                     <NodeTitle>{step.title}</NodeTitle>
-                    <NodeDescription className="text-tone-ink">
+                    <NodeDescription className="text-graph-tone-ink">
                       {step.kind}
                     </NodeDescription>
                   </NodeHeader>
@@ -2893,7 +2893,7 @@ export function GraphNodeGroupPreview() {
                     </NodeConnector>
                   </NodeConnectorsRight>
                 </NodeCard>
-              </Node>
+              </GraphNode>
             ))
           )}
         </NodeGroupIsland>

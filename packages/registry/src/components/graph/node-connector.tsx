@@ -98,13 +98,13 @@ export function NodeConnector({
 
 const nodeConnectorPortVariants = cva(
   [
-    "border-tone bg-card order-first -mx-[calc(var(--node-connector-port)/2)] size-(--node-connector-port) shrink-0 border-2",
+    "border-graph-tone bg-card order-first -mx-[calc(var(--node-connector-port)/2)] size-(--node-connector-port) shrink-0 border-2",
     // Rendered as a canvas's handle, it stays where the row puts it.
     "static transform-none",
     // A halo in the port's tone on hover, so it reads as something to grab.
-    "outline-4 outline-transparent transition-[outline-color] hover:outline-tone/30 forced-colors:outline-none",
+    "outline-4 outline-transparent transition-[outline-color] hover:outline-graph-tone/30 forced-colors:outline-none",
     "group-data-[side=right]/node-connectors:order-last",
-    "group-data-active/node-connector:bg-tone group-data-active/node-connector:border-solid",
+    "group-data-active/node-connector:bg-graph-tone group-data-active/node-connector:border-solid",
   ],
   {
     variants: {
@@ -115,7 +115,7 @@ const nodeConnectorPortVariants = cva(
       variant: {
         outline: "",
         dashed: "border-dashed",
-        solid: "bg-tone",
+        solid: "bg-graph-tone",
       },
     },
     defaultVariants: { shape: "circle", variant: "outline" },
@@ -168,7 +168,7 @@ export function NodeConnectorLabel({
     props: mergeProps<"span">(
       {
         className: cn(
-          "text-muted-foreground group-data-active/node-connector:bg-tone-soft group-data-active/node-connector:text-tone-ink -mx-1 min-w-0 truncate rounded-sm px-1 text-(length:--node-connector-text) leading-snug",
+          "text-muted-foreground group-data-active/node-connector:bg-graph-tone-soft group-data-active/node-connector:text-graph-tone-ink -mx-1 min-w-0 truncate rounded-sm px-1 text-(length:--node-connector-text) leading-snug",
           className,
         ),
       },

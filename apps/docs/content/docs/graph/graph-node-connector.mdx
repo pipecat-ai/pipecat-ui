@@ -15,7 +15,11 @@ This installs [Node](/docs/graph/graph-node) and [Tones](/docs/graph/graph-tone)
 ## Usage
 
 ```tsx
-import { Node, NodeCard, NodeContent } from "@/components/pipecat/graph/node";
+import {
+  GraphNode,
+  NodeCard,
+  NodeContent,
+} from "@/components/pipecat/graph/node";
 import {
   NodeConnector,
   NodeConnectorLabel,
@@ -24,7 +28,7 @@ import {
   NodeConnectorsRight,
 } from "@/components/pipecat/graph/node-connector";
 
-<Node>
+<GraphNode>
   <NodeCard>
     <NodeConnectorsLeft>
       <NodeConnector>
@@ -43,7 +47,7 @@ import {
       </NodeConnector>
     </NodeConnectorsRight>
   </NodeCard>
-</Node>;
+</GraphNode>;
 ```
 
 Connectors are markup and CSS, like the node: a port marks where a wire ends, and

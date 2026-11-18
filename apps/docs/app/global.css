@@ -122,20 +122,28 @@ html > body[data-scroll-locked] {
   --color-agent-foreground: var(--agent-foreground);
   --color-client: var(--client-background);
   --color-client-foreground: var(--client-foreground);
-  --color-tone: var(--tone, var(--graph-neutral));
-  --color-tone-soft: var(
-    --tone-soft,
-    color-mix(in oklab, var(--tone, var(--graph-neutral)) 14%, var(--card))
-  );
-  --color-tone-mid: var(
-    --tone-mid,
-    color-mix(in oklab, var(--tone, var(--graph-neutral)) 45%, var(--card))
-  );
-  --color-tone-ink: var(
-    --tone-ink,
+  --color-graph-tone: var(--graph-tone, var(--graph-neutral));
+  --color-graph-tone-soft: var(
+    --graph-tone-soft,
     color-mix(
       in oklab,
-      var(--tone, var(--graph-neutral)) 55%,
+      var(--graph-tone, var(--graph-neutral)) 14%,
+      var(--card)
+    )
+  );
+  --color-graph-tone-mid: var(
+    --graph-tone-mid,
+    color-mix(
+      in oklab,
+      var(--graph-tone, var(--graph-neutral)) 45%,
+      var(--card)
+    )
+  );
+  --color-graph-tone-ink: var(
+    --graph-tone-ink,
+    color-mix(
+      in oklab,
+      var(--graph-tone, var(--graph-neutral)) 55%,
       var(--foreground)
     )
   );

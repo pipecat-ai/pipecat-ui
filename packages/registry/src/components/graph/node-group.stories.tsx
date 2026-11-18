@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 
 import {
-  Node,
+  GraphNode,
   NodeCard,
   NodeContent,
   NodeDescription,
@@ -71,13 +71,15 @@ function Step({
   kind: string;
   tone?: GraphTone;
   size?: NodeSize;
-} & React.ComponentProps<typeof Node>) {
+} & React.ComponentProps<typeof GraphNode>) {
   return (
-    <Node size={size} tone={tone} {...props}>
+    <GraphNode size={size} tone={tone} {...props}>
       <NodeCard>
         <NodeHeader>
           <NodeTitle>{title}</NodeTitle>
-          <NodeDescription className="text-tone-ink">{kind}</NodeDescription>
+          <NodeDescription className="text-graph-tone-ink">
+            {kind}
+          </NodeDescription>
         </NodeHeader>
         <NodeConnectorsLeft>
           <NodeConnector>
@@ -93,7 +95,7 @@ function Step({
           </NodeConnector>
         </NodeConnectorsRight>
       </NodeCard>
-    </Node>
+    </GraphNode>
   );
 }
 

@@ -241,14 +241,17 @@ export function NodeWire({
       {active ? (
         <motion.path
           d={path}
-          className="stroke-tone/30 fill-none"
+          className="stroke-graph-tone/30 fill-none"
           strokeWidth={8}
           strokeLinecap="round"
         />
       ) : null}
       <motion.path
         d={path}
-        className={cn("stroke-tone fill-none", selected && "stroke-foreground")}
+        className={cn(
+          "stroke-graph-tone fill-none",
+          selected && "stroke-foreground",
+        )}
         strokeWidth={selected || active ? 3 : 2}
         strokeLinecap="round"
         strokeDasharray={dashed ? "7 7" : undefined}
@@ -257,7 +260,7 @@ export function NodeWire({
         // One dot per 56px of wire, drifting along it.
         <motion.path
           d={path}
-          className="animate-wire-pulse stroke-tone fill-none motion-reduce:animate-none"
+          className="animate-wire-pulse stroke-graph-tone fill-none motion-reduce:animate-none"
           strokeWidth={5}
           strokeLinecap="round"
           strokeDasharray="0.1 56"
@@ -312,10 +315,10 @@ export function NodeWireAction({
       {...props}
       data-slot="node-wire-action"
       className={cn(
-        "border-tone bg-card text-tone-ink size-4 rounded-full border-2 [&_svg]:stroke-[3.5] [&_svg:not([class*='size-'])]:size-2.5",
+        "border-graph-tone bg-card text-graph-tone-ink size-4 rounded-full border-2 [&_svg]:stroke-[3.5] [&_svg:not([class*='size-'])]:size-2.5",
         // An overshooting ease stands in for a spring.
         "transition-[scale,background-color,color] duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] hover:scale-150 active:scale-125 motion-reduce:transition-none",
-        "hover:bg-card hover:text-tone-ink dark:border-tone dark:bg-card dark:hover:bg-card",
+        "hover:bg-card hover:text-graph-tone-ink dark:border-graph-tone dark:bg-card dark:hover:bg-card",
         "aria-expanded:bg-foreground aria-expanded:text-background dark:aria-expanded:bg-foreground aria-expanded:scale-150",
         "group-data-selected/node-wire-label:bg-foreground group-data-selected/node-wire-label:text-background dark:group-data-selected/node-wire-label:bg-foreground group-data-selected/node-wire-label:scale-150",
         className,
@@ -356,13 +359,13 @@ export function NodeWireConnection({
     >
       <motion.path
         d={path}
-        className="stroke-tone fill-none"
+        className="stroke-graph-tone fill-none"
         strokeWidth={snapped ? 3 : 2}
         strokeLinecap="round"
         strokeDasharray={refused ? "6 7" : undefined}
       />
       {snapped ? null : (
-        <circle cx={toX} cy={toY} r={5} className="fill-tone" />
+        <circle cx={toX} cy={toY} r={5} className="fill-graph-tone" />
       )}
     </g>
   );

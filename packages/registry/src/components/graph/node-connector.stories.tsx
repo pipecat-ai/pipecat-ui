@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import {
-  Node,
+  GraphNode,
   NodeCard,
   NodeContent,
   NodeDescription,
@@ -43,7 +43,7 @@ type Story = StoryObj<typeof meta>;
 /** One connector on a node. Hover the port for its halo. */
 export const Basic: Story = {
   render: (args) => (
-    <Node tone="green">
+    <GraphNode tone="green">
       <NodeCard>
         <NodeHeader>
           <NodeTitle>Verify identity</NodeTitle>
@@ -58,7 +58,7 @@ export const Basic: Story = {
           </NodeConnector>
         </NodeConnectorsRight>
       </NodeCard>
-    </Node>
+    </GraphNode>
   ),
 };
 
@@ -66,7 +66,7 @@ export const Basic: Story = {
 export const Sides: Story = {
   render: () => (
     <div className="flex flex-wrap items-start gap-10">
-      <Node>
+      <GraphNode>
         <NodeCard>
           <NodeHeader>
             <NodeTitle>Ports only</NodeTitle>
@@ -88,8 +88,8 @@ export const Sides: Story = {
             </NodeConnector>
           </NodeConnectorsRight>
         </NodeCard>
-      </Node>
-      <Node>
+      </GraphNode>
+      <GraphNode>
         <NodeCard>
           <NodeHeader>
             <NodeTitle>Labels both sides</NodeTitle>
@@ -115,8 +115,8 @@ export const Sides: Story = {
             </NodeConnector>
           </NodeConnectorsRight>
         </NodeCard>
-      </Node>
-      <Node>
+      </GraphNode>
+      <GraphNode>
         <NodeCard>
           <NodeConnectorsLeft className="justify-start">
             <NodeConnector>
@@ -137,7 +137,7 @@ export const Sides: Story = {
             </NodeConnector>
           </NodeConnectorsRight>
         </NodeCard>
-      </Node>
+      </GraphNode>
     </div>
   ),
 };
@@ -145,7 +145,7 @@ export const Sides: Story = {
 /** What a port can look like. */
 export const Ports: Story = {
   render: () => (
-    <Node tone="blue">
+    <GraphNode tone="blue">
       <NodeCard>
         <NodeHeader>
           <NodeTitle>Ports</NodeTitle>
@@ -177,14 +177,14 @@ export const Ports: Story = {
           </NodeConnector>
         </NodeConnectorsRight>
       </NodeCard>
-    </Node>
+    </GraphNode>
   ),
 };
 
 /** The connector's own variables, set on the area. */
 export const Resized: Story = {
   render: () => (
-    <Node tone="purple">
+    <GraphNode tone="purple">
       <NodeCard>
         <NodeHeader>
           <NodeTitle>Bigger connectors</NodeTitle>
@@ -200,6 +200,6 @@ export const Resized: Story = {
           </NodeConnector>
         </NodeConnectorsRight>
       </NodeCard>
-    </Node>
+    </GraphNode>
   ),
 };

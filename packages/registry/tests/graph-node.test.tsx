@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import {
   NodeAction,
-  Node,
+  GraphNode,
   NodeCard,
   NodeContent,
   NodeDescription,
@@ -18,10 +18,10 @@ import {
 const slot = (container: HTMLElement, name: string) =>
   container.querySelector<HTMLElement>(`[data-slot="${name}"]`);
 
-describe("Node", () => {
+describe("GraphNode", () => {
   it("exposes each part and the node's size for styling", () => {
     const { container } = render(
-      <Node size="lg">
+      <GraphNode size="lg">
         <NodeCard>
           <NodeHeader>
             <NodeTitle>Book</NodeTitle>
@@ -31,7 +31,7 @@ describe("Node", () => {
           <NodeContent>Body</NodeContent>
           <NodeFooter>Foot</NodeFooter>
         </NodeCard>
-      </Node>,
+      </GraphNode>,
     );
 
     const node = slot(container, "node");
@@ -51,12 +51,12 @@ describe("Node", () => {
   });
 
   it("marks a fluid node and changes nothing but its width", () => {
-    const { container, rerender } = render(<Node />);
+    const { container, rerender } = render(<GraphNode />);
     const node = slot(container, "node");
     const fixed = [...(node?.classList ?? [])];
     expect(node).toHaveClass("w-(--node-width)");
 
-    rerender(<Node fluid />);
+    rerender(<GraphNode fluid />);
     expect(node).toHaveAttribute("data-fluid");
     const fluid = [...(node?.classList ?? [])];
     expect(fluid.filter((name) => !fixed.includes(name))).toEqual(["w-full"]);
@@ -67,9 +67,9 @@ describe("Node", () => {
 
   it("lets className replace a default instead of fighting it", () => {
     const { container } = render(
-      <Node className="w-80 [--node-radius:0px]">
+      <GraphNode className="w-80 [--node-radius:0px]">
         <NodeCard className="bg-muted" />
-      </Node>,
+      </GraphNode>,
     );
     const node = slot(container, "node");
     expect(node).toHaveClass("w-80");
@@ -100,48 +100,54 @@ describe("Node", () => {
   });
 
   it("puts a node's tone in scope, or leaves it to the tone around it", () => {
-    const { container, rerender } = render(<Node tone="green" />);
+    const { container, rerender } = render(<GraphNode tone="green" />);
     const node = slot(container, "node");
     expect(node).toHaveAttribute("data-tone", "green");
-    expect(node?.style.getPropertyValue("--tone")).toContain("--graph-green");
+    expect(node?.style.getPropertyValue("--graph-tone")).toContain(
+      "--graph-green",
+    );
 
-    rerender(<Node />);
+    rerender(<GraphNode />);
     expect(node).not.toHaveAttribute("data-tone");
-    expect(node?.style.getPropertyValue("--tone")).toBe("");
+    expect(node?.style.getPropertyValue("--graph-tone")).toBe("");
   });
 
   it("marks a status and gives it a tone of its own, apart from the node's", () => {
-    const { container, rerender } = render(<Node tone="blue" status="guard" />);
+    const { container, rerender } = render(
+      <GraphNode tone="blue" status="guard" />,
+    );
     const node = slot(container, "node");
     const statusTone = () => node?.style.getPropertyValue("--node-status");
     expect(node).toHaveAttribute("data-status", "guard");
     expect(statusTone()).toContain("--graph-amber");
-    expect(node?.style.getPropertyValue("--tone")).toContain("--graph-blue");
+    expect(node?.style.getPropertyValue("--graph-tone")).toContain(
+      "--graph-blue",
+    );
 
-    rerender(<Node tone="blue" status="error" />);
+    rerender(<GraphNode tone="blue" status="error" />);
     expect(statusTone()).toContain("--graph-red");
 
-    rerender(<Node tone="blue" status="error" statusTone="pink" />);
+    rerender(<GraphNode tone="blue" status="error" statusTone="pink" />);
     expect(statusTone()).toContain("--graph-pink");
   });
 
   it("leaves an active node's status to its own tone, and an idle one unmarked", () => {
     const { container, rerender } = render(
-      <Node tone="blue" status="active" />,
+      <GraphNode tone="blue" status="active" />,
     );
     const node = slot(container, "node");
     expect(node).toHaveAttribute("data-status", "active");
     expect(node?.style.getPropertyValue("--node-status")).toBe("");
 
-    rerender(<Node tone="blue" />);
+    rerender(<GraphNode tone="blue" />);
     expect(node).not.toHaveAttribute("data-status");
   });
 
   it("styles the card from the node's status", () => {
     const { container } = render(
-      <Node status="error">
+      <GraphNode status="error">
         <NodeCard />
-      </Node>,
+      </GraphNode>,
     );
     expect(slot(container, "node-card")?.className).toContain(
       "group-data-[status=error]/node:ring-(--node-status)",
@@ -150,9 +156,9 @@ describe("Node", () => {
 
   it("says a status in words with a badge", () => {
     const { container } = render(
-      <Node status="active">
+      <GraphNode status="active">
         <NodeStatusBadge className="uppercase">Listening</NodeStatusBadge>
-      </Node>,
+      </GraphNode>,
     );
     const badge = slot(container, "node-status-badge");
     expect(badge).toHaveTextContent("Listening");
@@ -160,20 +166,20 @@ describe("Node", () => {
   });
 
   it("keeps connector sizes out of the node's own variables", () => {
-    const { container } = render(<Node />);
+    const { container } = render(<GraphNode />);
     expect(slot(container, "node")?.className).not.toContain("connector");
   });
 
   it("draws a subflow's stack only when asked", () => {
-    const { container, rerender } = render(<Node />);
+    const { container, rerender } = render(<GraphNode />);
     const node = slot(container, "node");
     expect(node).toHaveAttribute("data-variant", "default");
     expect(node?.className).not.toContain("before:");
 
-    rerender(<Node variant="subflow" />);
+    rerender(<GraphNode variant="subflow" />);
     expect(node).toHaveAttribute("data-variant", "subflow");
-    expect(node?.className).toContain("before:bg-tone-mid/50");
-    expect(node?.className).toContain("after:bg-tone-mid");
+    expect(node?.className).toContain("before:bg-graph-tone-mid/50");
+    expect(node?.className).toContain("after:bg-graph-tone-mid");
   });
 
   it("gives a subflow an open button that is named and clickable", async () => {
@@ -182,7 +188,7 @@ describe("Node", () => {
 
     const button = screen.getByRole("button", { name: "Open Scheduling" });
     expect(button).toHaveAttribute("data-slot", "node-expand");
-    expect(button).toHaveClass("bg-tone-soft", "text-tone-ink");
+    expect(button).toHaveClass("bg-graph-tone-soft", "text-graph-tone-ink");
     expect(button).not.toHaveClass("bg-secondary");
     expect(button.querySelector("svg")).toBeInTheDocument();
 

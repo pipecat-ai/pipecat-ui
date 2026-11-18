@@ -47,7 +47,11 @@ describe("NodeWireAction", () => {
 
     const button = screen.getByRole("button", { name: "Add a step" });
     expect(button).toHaveAttribute("data-slot", "node-wire-action");
-    expect(button).toHaveClass("border-tone", "bg-card", "text-tone-ink");
+    expect(button).toHaveClass(
+      "border-graph-tone",
+      "bg-card",
+      "text-graph-tone-ink",
+    );
     expect(button).not.toHaveClass("hover:bg-muted");
     expect(button).not.toHaveClass("dark:bg-input/30");
     expect(button.querySelector("svg")).toBeInTheDocument();

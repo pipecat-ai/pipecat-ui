@@ -5,16 +5,16 @@ import { graphToneStyle } from "@/components/pipecat/graph/tone";
 describe("graphToneStyle", () => {
   it("points a tone at its palette colour and the shades it may pin", () => {
     expect(graphToneStyle("green")).toEqual({
-      "--tone": "var(--graph-green, var(--graph-neutral))",
-      "--tone-soft": "var(--graph-green-soft)",
-      "--tone-mid": "var(--graph-green-mid)",
-      "--tone-ink": "var(--graph-green-ink)",
+      "--graph-tone": "var(--graph-green, var(--graph-neutral))",
+      "--graph-tone-soft": "var(--graph-green-soft)",
+      "--graph-tone-mid": "var(--graph-green-mid)",
+      "--graph-tone-ink": "var(--graph-green-ink)",
     });
   });
 
   it("takes a tone of your own the same way", () => {
     expect(graphToneStyle("brand-2")).toMatchObject({
-      "--tone": "var(--graph-brand-2, var(--graph-neutral))",
+      "--graph-tone": "var(--graph-brand-2, var(--graph-neutral))",
     });
   });
 
