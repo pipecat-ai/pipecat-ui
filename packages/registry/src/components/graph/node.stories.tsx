@@ -12,6 +12,7 @@ import {
   NodeExpand,
   NodeFooter,
   NodeHeader,
+  NodeStatusBadge,
   NodeTitle,
 } from "@/components/pipecat/graph/node";
 import {
@@ -34,16 +35,25 @@ const TONES = [
   "coral",
   "red",
 ] as const;
+const STATUSES = ["idle", "active", "guard", "error"] as const;
 const OUTPUTS = ["Booked", "No slots", "Declined"] as const;
 
 const meta = {
   title: "Graph/Node",
   component: Node,
-  args: { size: "md", fluid: false, variant: "default", tone: "neutral" },
+  args: {
+    size: "md",
+    fluid: false,
+    variant: "default",
+    tone: "neutral",
+    status: "idle",
+  },
   argTypes: {
     size: { control: "inline-radio", options: SIZES },
     variant: { control: "inline-radio", options: ["default", "subflow"] },
     tone: { control: "select", options: TONES },
+    status: { control: "inline-radio", options: STATUSES },
+    statusTone: { control: "select", options: [undefined, ...TONES] },
     render: { control: false },
   },
 } satisfies Meta<typeof Node>;
@@ -53,8 +63,9 @@ type Story = StoryObj<typeof meta>;
 
 function ExampleNode({
   outputs = OUTPUTS,
+  badge,
   ...props
-}: NodeProps & { outputs?: readonly string[] }) {
+}: NodeProps & { outputs?: readonly string[]; badge?: React.ReactNode }) {
   const subflow = props.variant === "subflow";
   const shape = subflow ? "diamond" : "circle";
   return (
@@ -97,6 +108,7 @@ function ExampleNode({
           <NodeDescription>needs patient · slot</NodeDescription>
         </NodeFooter>
       </NodeCard>
+      {badge ? <NodeStatusBadge>{badge}</NodeStatusBadge> : null}
     </Node>
   );
 }
@@ -137,6 +149,56 @@ export const Tones: Story = {
       {TONES.map((tone) => (
         <ExampleNode key={tone} {...args} tone={tone} outputs={["Next"]} />
       ))}
+    </div>
+  ),
+};
+
+/** A note beside the badge's word: a timing, the guard that fired, the error. */
+const note = (text: string) => (
+  <span className="font-normal opacity-70"> {text}</span>
+);
+
+/**
+ * What a node shows while a call is at it. Three are `active` in a tone each,
+ * the middle one the node's own; a guard and an error bring theirs.
+ */
+export const Statuses: Story = {
+  args: { tone: "blue" },
+  render: (args) => (
+    <div className="flex flex-wrap items-start gap-x-8 gap-y-10 pt-4">
+      <ExampleNode {...args} outputs={["Next"]} />
+      <ExampleNode
+        {...args}
+        outputs={["Next"]}
+        status="active"
+        statusTone="coral"
+        badge={<>Listening{note("420 ms")}</>}
+      />
+      <ExampleNode
+        {...args}
+        outputs={["Next"]}
+        status="active"
+        badge={<>Speaking{note("1.2 s")}</>}
+      />
+      <ExampleNode
+        {...args}
+        outputs={["Next"]}
+        status="active"
+        statusTone="green"
+        badge={<>Thinking{note("310 ms")}</>}
+      />
+      <ExampleNode
+        {...args}
+        outputs={["Next"]}
+        status="guard"
+        badge={<>Guard{note("Emergency")}</>}
+      />
+      <ExampleNode
+        {...args}
+        outputs={["Next"]}
+        status="error"
+        badge={<>Error{note("Tool timed out")}</>}
+      />
     </div>
   ),
 };

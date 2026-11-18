@@ -24,6 +24,9 @@ const nodeVariants = cva(
     "[grid-template-areas:'header_header_header'_'left_content_right'_'footer_footer_footer']",
     // The body gives up its padding on a side that meets a header or a footer.
     "[--node-body-pb:var(--node-py)] [--node-body-pt:var(--node-py)] has-data-[slot=node-footer]:[--node-body-pb:0px] has-data-[slot=node-header]:[--node-body-pt:0px]",
+    // A status takes the node's own tone until it is given one. The tint is
+    // its soft shade, mixed from the tone if none is pinned.
+    "[--node-status-soft:var(--tone-soft)] [--node-status-tint:var(--node-status-soft,color-mix(in_oklab,var(--node-status)_14%,var(--card)))] [--node-status:var(--tone,var(--graph-neutral))]",
   ],
   {
     variants: {
@@ -68,6 +71,26 @@ const nodeVariants = cva(
 
 export type NodeSize = NonNullable<VariantProps<typeof nodeVariants>["size"]>;
 
+/** What a call is doing at a node while it plays. */
+export type NodeStatus = "idle" | "active" | "guard" | "error";
+
+/** The tone a status takes unless the node names one. The rest take the node's own. */
+const STATUS_TONES: Partial<Record<NodeStatus, GraphTone>> = {
+  guard: "amber",
+  error: "red",
+};
+
+/** A status's tone under names of its own, so the node's tone stays as it is. */
+function statusToneStyle(tone: GraphTone | undefined) {
+  const scope = graphToneStyle(tone) as Record<string, string> | undefined;
+  return (
+    scope && {
+      "--node-status": scope["--tone"],
+      "--node-status-soft": scope["--tone-soft"],
+    }
+  );
+}
+
 export interface NodeProps extends useRender.ComponentProps<"div"> {
   /** Width, padding, type and connector sizes. */
   size?: NodeSize;
@@ -77,6 +100,16 @@ export interface NodeProps extends useRender.ComponentProps<"div"> {
   variant?: NonNullable<VariantProps<typeof nodeVariants>["variant"]>;
   /** The palette tone the node's parts take: ports, the stack, `bg-tone-soft`. */
   tone?: GraphTone;
+  /**
+   * What a call is doing here, shown on the card: `active` rings it and
+   * pulses, `guard` and `error` ring and tint it. An error also shakes it once.
+   */
+  status?: NodeStatus;
+  /**
+   * The tone of the status, apart from the node's. Amber for a guard and red
+   * for an error unless set; otherwise the node's own.
+   */
+  statusTone?: GraphTone;
 }
 
 /**
@@ -89,6 +122,8 @@ export function Node({
   fluid = false,
   variant = "default",
   tone,
+  status = "idle",
+  statusTone = STATUS_TONES[status],
   className,
   render,
   ...props
@@ -99,11 +134,22 @@ export function Node({
     props: mergeProps<"div">(
       {
         className: cn(nodeVariants({ size, fluid, variant }), className),
-        style: graphToneStyle(tone),
+        style: {
+          ...graphToneStyle(tone),
+          ...statusToneStyle(statusTone),
+        },
       },
       props,
     ),
-    state: { slot: "node", size, fluid, variant, tone },
+    state: {
+      slot: "node",
+      size,
+      fluid,
+      variant,
+      tone,
+      // On the node only while it has one, so `data-status` means "not idle".
+      status: status === "idle" ? undefined : status,
+    },
   });
 }
 
@@ -123,6 +169,14 @@ export function NodeCard({ className, render, ...props }: NodeCardProps) {
           // Its own line height, so a node reads the same wherever it is placed,
           // and long words wrap rather than spill out of a fixed width.
           "bg-card text-card-foreground ring-foreground/10 relative col-span-full row-span-full grid grid-cols-subgrid grid-rows-subgrid rounded-(--node-radius) text-(length:--node-text) leading-snug wrap-break-word ring-1",
+          // What each status does to the card, spelled out so one can be restyled alone.
+          "transition-[box-shadow,background-color] duration-200",
+          "group-data-[status=active]/node:animate-node-glow group-data-[status=active]/node:ring-3 group-data-[status=active]/node:ring-(--node-status)",
+          "group-data-[status=guard]/node:bg-(--node-status-tint) group-data-[status=guard]/node:ring-3 group-data-[status=guard]/node:ring-(--node-status)",
+          "group-data-[status=error]/node:animate-node-shake group-data-[status=error]/node:bg-(--node-status-tint) group-data-[status=error]/node:ring-3 group-data-[status=error]/node:ring-(--node-status)",
+          "motion-reduce:group-data-[status=active]/node:animate-none motion-reduce:group-data-[status=error]/node:animate-none",
+          // Forced colours drop the ring and would draw the pulse solid: a plain outline instead.
+          "forced-colors:group-data-status/node:outline-2 forced-colors:group-data-[status=active]/node:animate-none",
           className,
         ),
       },
@@ -237,6 +291,36 @@ export function NodeExpand({ className, children, ...props }: NodeExpandProps) {
       {children ?? <Maximize2Icon aria-hidden />}
     </Button>
   );
+}
+
+export type NodeStatusBadgeProps = useRender.ComponentProps<"span">;
+
+/**
+ * The chip on a node's top edge that says what it is doing. Its dot is in the
+ * node's status tone, and it pops in when it is added.
+ */
+export function NodeStatusBadge({
+  className,
+  render,
+  ...props
+}: NodeStatusBadgeProps) {
+  return useRender({
+    defaultTagName: "span",
+    render,
+    props: mergeProps<"span">(
+      {
+        className: cn(
+          "bg-foreground text-background absolute top-0 right-(--node-px) z-1 max-w-[calc(100%-var(--node-px)*2)] -translate-y-1/2 truncate rounded-full px-[0.8em] py-[0.35em] text-(length:--node-text-description) leading-tight font-medium shadow-sm forced-colors:outline",
+          // The dot leans towards the text's colour, so it shows on the chip in either theme.
+          "before:mr-[0.5em] before:inline-block before:size-[0.5em] motion-safe:before:animate-pulse before:rounded-full before:bg-[color-mix(in_oklab,var(--node-status)_70%,var(--background))] before:align-[0.1em]",
+          "transition-[scale,opacity] duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] motion-reduce:transition-none starting:scale-50 starting:opacity-0",
+          className,
+        ),
+      },
+      props,
+    ),
+    state: { slot: "node-status-badge" },
+  });
 }
 
 export type NodeContentProps = useRender.ComponentProps<"div">;

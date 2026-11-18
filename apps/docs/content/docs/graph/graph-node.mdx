@@ -1,6 +1,6 @@
 ---
 title: Node
-description: The parts of a graph node as plain markup — a box, a card, header, content and footer — in four sizes, fixed or fluid, with room on either side for connectors.
+description: The parts of a graph node as plain markup — a box, a card, header, content and footer — in four sizes, fixed or fluid, with room on either side for connectors and a status for live playback.
 storybook: "/storybook/?path=/story/graph-node--basic"
 ---
 
@@ -50,14 +50,15 @@ it on a canvas.
 | `NodeTitle`, `NodeDescription`            | Text, for a header or a footer.                                                       |
 | `NodeAction`                              | Trailing controls in a header, beside the title.                                      |
 | `NodeExpand`                              | The button that opens a subflow, for `NodeAction`.                                    |
+| `NodeStatusBadge`                         | The chip on the top edge that says what the node is doing.                            |
 
 Parts are placed by name, so their order in the markup doesn't matter, and a node takes
 one of each. The middle row has a column either side of the content for
 [connectors](/docs/graph/graph-node-connector) and is as tall as whichever is taller, so
 a node grows to fit its outputs.
 
-Anything else you add, such as a badge or a selection ring, should be absolutely
-positioned so it stays out of the rows.
+Anything else you add, such as a selection ring, should be absolutely positioned so it
+stays out of the rows.
 
 ### Why a box and a card
 
@@ -148,6 +149,38 @@ The stack hangs below the node's box and takes no room in the layout. Give a sub
 ports the `diamond` [shape](/docs/graph/graph-node-connector#ports) to mark them as links
 into another graph.
 
+## Status
+
+`status` shows what a call is doing at a node while it plays. The card changes to match:
+
+| Status   | The card                               | Its tone, unless set |
+| -------- | -------------------------------------- | -------------------- |
+| `idle`   | At rest.                               |                      |
+| `active` | A ring, and it pulses.                 | The node's           |
+| `guard`  | A ring and a tint.                     | `amber`              |
+| `error`  | A ring and a tint, and it shakes once. | `red`                |
+
+A status has a tone apart from the node's, so the ports keep their colour. `statusTone`
+picks it from the [palette](/docs/graph/graph-tone#the-palette), which lets one status
+stand for several things:
+
+```tsx
+<Node tone="blue" status="active" statusTone="coral">
+  <NodeCard>…</NodeCard>
+  <NodeStatusBadge>Listening</NodeStatusBadge>
+</Node>
+```
+
+`NodeStatusBadge` says the status in words, which colour alone doesn't. It sits on the
+node's top edge with a dot in the status tone, and pops in when it is added, so render it
+only while there is something to say. It isn't a live region: announce playback once for
+the canvas, not from every node.
+
+To show the way a call left, set `active` on the
+[connector](/docs/graph/graph-node-connector#tone-and-state) and the
+[wire](/docs/graph/graph-node-wire) it took. The shake and the pulse are skipped for
+people who ask for reduced motion.
+
 ## Styling
 
 Each part takes `className`, and a class you pass replaces the default it conflicts with.
@@ -176,19 +209,31 @@ Lengths are steps of Tailwind's `--spacing`, so setting `--spacing` on a node re
 it. The radius follows your theme's `--radius` unless you set it.
 
 Every part carries a `data-slot` (`node`, `node-card`, `node-header` and so on). `Node`
-also carries `data-size`, `data-variant`, `data-fluid` and `data-tone`. Other state is
-yours to add: put `data-selected` or `aria-disabled` on `Node` and style any part from
-it with `group-data-selected/node:`.
+also carries `data-size`, `data-variant`, `data-fluid` and `data-tone`, and `data-status`
+while its status isn't `idle`. Other state is yours to add: put `data-selected` or
+`aria-disabled` on `Node` and style any part from it with `group-data-selected/node:`.
+
+Restyle one status the same way, and reach its tone through `--node-status`. This
+card holds still while it is active:
+
+```tsx
+<NodeCard className="group-data-[status=active]/node:animate-none">…</NodeCard>
+```
+
+A status's tint is its tone's `-soft` shade, so
+[pin that](/docs/graph/graph-tone#a-tone-of-your-own) to change it.
 
 Every part also takes Base UI's `render` prop, to become a `motion.div`, a `<section>` or a
 link while keeping its slot, classes and handlers.
 
 ## Key props
 
-| Prop      | On         | Type                           | Description                                                 |
-| --------- | ---------- | ------------------------------ | ----------------------------------------------------------- |
-| `size`    | Node       | `"sm" \| "md" \| "lg" \| "xl"` | Width, padding and type. Default `md`.                      |
-| `fluid`   | Node       | `boolean`                      | Fill the parent's width. Nothing else changes size.         |
-| `variant` | Node       | `"default" \| "subflow"`       | `subflow` draws a stack of cards behind the node.           |
-| `tone`    | Node       | a palette tone, or your own    | The tone the node's parts and connectors take.              |
-| `render`  | Every part | `ReactElement \| function`     | Render the part as another element, keeping its attributes. |
+| Prop         | On         | Type                                       | Description                                                                          |
+| ------------ | ---------- | ------------------------------------------ | ------------------------------------------------------------------------------------ |
+| `size`       | Node       | `"sm" \| "md" \| "lg" \| "xl"`             | Width, padding and type. Default `md`.                                               |
+| `fluid`      | Node       | `boolean`                                  | Fill the parent's width. Nothing else changes size.                                  |
+| `variant`    | Node       | `"default" \| "subflow"`                   | `subflow` draws a stack of cards behind the node.                                    |
+| `tone`       | Node       | a palette tone, or your own                | The tone the node's parts and connectors take.                                       |
+| `status`     | Node       | `"idle" \| "active" \| "guard" \| "error"` | What a call is doing here. Default `idle`.                                           |
+| `statusTone` | Node       | a palette tone, or your own                | The status's tone. Default `amber` for a guard, `red` for an error, else the node's. |
+| `render`     | Every part | `ReactElement \| function`                 | Render the part as another element, keeping its attributes.                          |

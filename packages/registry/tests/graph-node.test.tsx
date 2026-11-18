@@ -11,6 +11,7 @@ import {
   NodeExpand,
   NodeFooter,
   NodeHeader,
+  NodeStatusBadge,
   NodeTitle,
 } from "@/components/pipecat/graph/node";
 
@@ -107,6 +108,55 @@ describe("Node", () => {
     rerender(<Node />);
     expect(node).not.toHaveAttribute("data-tone");
     expect(node?.style.getPropertyValue("--tone")).toBe("");
+  });
+
+  it("marks a status and gives it a tone of its own, apart from the node's", () => {
+    const { container, rerender } = render(<Node tone="blue" status="guard" />);
+    const node = slot(container, "node");
+    const statusTone = () => node?.style.getPropertyValue("--node-status");
+    expect(node).toHaveAttribute("data-status", "guard");
+    expect(statusTone()).toContain("--graph-amber");
+    expect(node?.style.getPropertyValue("--tone")).toContain("--graph-blue");
+
+    rerender(<Node tone="blue" status="error" />);
+    expect(statusTone()).toContain("--graph-red");
+
+    rerender(<Node tone="blue" status="error" statusTone="pink" />);
+    expect(statusTone()).toContain("--graph-pink");
+  });
+
+  it("leaves an active node's status to its own tone, and an idle one unmarked", () => {
+    const { container, rerender } = render(
+      <Node tone="blue" status="active" />,
+    );
+    const node = slot(container, "node");
+    expect(node).toHaveAttribute("data-status", "active");
+    expect(node?.style.getPropertyValue("--node-status")).toBe("");
+
+    rerender(<Node tone="blue" />);
+    expect(node).not.toHaveAttribute("data-status");
+  });
+
+  it("styles the card from the node's status", () => {
+    const { container } = render(
+      <Node status="error">
+        <NodeCard />
+      </Node>,
+    );
+    expect(slot(container, "node-card")?.className).toContain(
+      "group-data-[status=error]/node:ring-(--node-status)",
+    );
+  });
+
+  it("says a status in words with a badge", () => {
+    const { container } = render(
+      <Node status="active">
+        <NodeStatusBadge className="uppercase">Listening</NodeStatusBadge>
+      </Node>,
+    );
+    const badge = slot(container, "node-status-badge");
+    expect(badge).toHaveTextContent("Listening");
+    expect(badge).toHaveClass("uppercase", "absolute");
   });
 
   it("keeps connector sizes out of the node's own variables", () => {

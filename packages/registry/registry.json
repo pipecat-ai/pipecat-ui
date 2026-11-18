@@ -652,7 +652,7 @@
       "name": "graph-node",
       "type": "registry:component",
       "title": "Graph Node",
-      "description": "The parts of a node for graph and flow editors, as plain markup: a box, a card, header, content and footer, with room on either side for connectors. Four sizes, fixed and fluid widths, palette tones and a subflow variant. No canvas, wires or script.",
+      "description": "The parts of a node for graph and flow editors, as plain markup: a box, a card, header, content and footer, with room on either side for connectors. Four sizes, fixed and fluid widths, palette tones, a subflow variant, and statuses with a badge for showing a call as it plays. No canvas, wires or script.",
       "dependencies": [
         "@base-ui/react@^1.8.0",
         "class-variance-authority@^0.7.1",
@@ -666,7 +666,43 @@
           "target": "components/pipecat/graph/node.tsx"
         }
       ],
-      "docs": "Compose Node > NodeCard > NodeHeader, NodeContent and NodeFooter; add connectors with @pipecat/graph-node-connector. Node is a size container: give it a width with size, or fluid to fill its parent. Give a node a tone to colour it from the graph palette. Restyle through className and the --node-* variables; every part takes Base UI's render prop.",
+      "cssVars": {
+        "theme": {
+          "animate-node-glow": "node-glow 1.8s ease-out infinite",
+          "animate-node-shake": "node-shake 0.45s ease-in-out"
+        }
+      },
+      "css": {
+        "@keyframes node-glow": {
+          "0%": {
+            "outline": "0 solid color-mix(in oklab, var(--node-status) 50%, transparent)",
+            "outline-offset": "3px"
+          },
+          "70%": {
+            "outline": "14px solid transparent",
+            "outline-offset": "3px"
+          },
+          "100%": {
+            "outline": "0 solid transparent",
+            "outline-offset": "3px"
+          }
+        },
+        "@keyframes node-shake": {
+          "20%": {
+            "translate": "-6px"
+          },
+          "40%": {
+            "translate": "6px"
+          },
+          "60%": {
+            "translate": "-4px"
+          },
+          "80%": {
+            "translate": "4px"
+          }
+        }
+      },
+      "docs": "Compose Node > NodeCard > NodeHeader, NodeContent and NodeFooter; add connectors with @pipecat/graph-node-connector. Node is a size container: give it a width with size, or fluid to fill its parent. Give a node a tone to colour it from the graph palette. During playback set status (active, guard, error) and statusTone on Node, and put a NodeStatusBadge inside it to say the status in words. Restyle through className and the --node-* variables; every part takes Base UI's render prop.",
       "categories": ["graph"]
     },
     {

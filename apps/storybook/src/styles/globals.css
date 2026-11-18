@@ -9,6 +9,36 @@
 
 @source "../../../../packages/registry/src";
 
+/* pipecat-ui: a graph node pulsing while it is active, and shaking on an error */
+@keyframes node-glow {
+  0% {
+    outline: 0 solid color-mix(in oklab, var(--node-status) 50%, transparent);
+    outline-offset: 3px;
+  }
+  70% {
+    outline: 14px solid transparent;
+    outline-offset: 3px;
+  }
+  100% {
+    outline: 0 solid transparent;
+    outline-offset: 3px;
+  }
+}
+@keyframes node-shake {
+  20% {
+    translate: -6px;
+  }
+  40% {
+    translate: 6px;
+  }
+  60% {
+    translate: -4px;
+  }
+  80% {
+    translate: 4px;
+  }
+}
+
 /* pipecat-ui: the signal dot drifting along a graph wire */
 @keyframes wire-pulse {
   to {
@@ -184,6 +214,8 @@
     )
   );
   --animate-wire-pulse: wire-pulse 1.8s linear infinite;
+  --animate-node-glow: node-glow 1.8s ease-out infinite;
+  --animate-node-shake: node-shake 0.45s ease-in-out;
 }
 
 :root {

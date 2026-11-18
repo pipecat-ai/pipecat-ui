@@ -81,6 +81,8 @@ import {
   NodeFooter,
   NodeHeader,
   type NodeSize,
+  type NodeStatus,
+  NodeStatusBadge,
   NodeTitle,
 } from "@/components/pipecat/graph/node";
 import {
@@ -2444,6 +2446,20 @@ export function GraphNodeWirePreview() {
 }
 
 const NODE_VARIANTS = ["default", "subflow"] as const;
+const NODE_STATUSES = [
+  "idle",
+  "active",
+  "guard",
+  "error",
+] as const satisfies NodeStatus[];
+const STATUS_TONES = ["auto", ...GRAPH_TONES] as const;
+/** What the badge says for each status. */
+const STATUS_WORDS: Record<NodeStatus, string> = {
+  idle: "",
+  active: "Speaking",
+  guard: "Guard",
+  error: "Error",
+};
 
 export function GraphNodePreview() {
   const [size, setSize] = useState<NodeSize>("md");
@@ -2452,6 +2468,10 @@ export function GraphNodePreview() {
   const [tone, setTone] = useState<(typeof GRAPH_TONES)[number]>("neutral");
   const [fluid, setFluid] = useState(false);
   const [width, setWidth] = useState(20);
+  const [status, setStatus] = useState<NodeStatus>("idle");
+  const [statusTone, setStatusTone] =
+    useState<(typeof STATUS_TONES)[number]>("auto");
+  const [badge, setBadge] = useState(true);
   const [header, setHeader] = useState(true);
   const [content, setContent] = useState(true);
   const [footer, setFooter] = useState(true);
@@ -2497,6 +2517,25 @@ export function GraphNodePreview() {
               onChange={setWidth}
               min={10}
               max={32}
+            />
+          </ControlSection>
+          <ControlSection title="Status">
+            <SelectControl
+              label="status"
+              value={status}
+              onValueChange={setStatus}
+              options={NODE_STATUSES}
+            />
+            <SelectControl
+              label="status tone"
+              value={statusTone}
+              onValueChange={setStatusTone}
+              options={STATUS_TONES}
+            />
+            <BooleanControl
+              label="status badge"
+              checked={badge}
+              onCheckedChange={setBadge}
             />
           </ControlSection>
           <ControlSection title="Parts">
@@ -2550,7 +2589,17 @@ export function GraphNodePreview() {
         className="flex max-w-full justify-center"
         style={{ width: `${width}rem` }}
       >
-        <Node size={size} fluid={fluid} variant={variant} tone={tone}>
+        <Node
+          size={size}
+          fluid={fluid}
+          variant={variant}
+          tone={tone}
+          status={status}
+          statusTone={statusTone === "auto" ? undefined : statusTone}
+        >
+          {badge && status !== "idle" && (
+            <NodeStatusBadge>{STATUS_WORDS[status]}</NodeStatusBadge>
+          )}
           <NodeCard>
             {header && (
               <NodeHeader>
